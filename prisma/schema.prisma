@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Debtor {
+  id          Int      @id @default(autoincrement())
+  name        String
+  cpf         String   @unique
+  amount      Float
+  description String
+  status      String   @default("PENDENTE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  logs        Log[]
+}
+
+model Log {
+  id        Int      @id @default(autoincrement())
+  name      String
+  cpf       String
+  event     String   @default("CONSULTA")
+  ip        String?
+  debtorId  Int?
+  debtor    Debtor?  @relation(fields: [debtorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Settings {
+  id                Int     @id @default(1)
+  companyName       String  @default("NegociAI")
+  companyLogo       String  @default("")
+  primaryColor      String  @default("#6366f1")
+  secondaryColor    String  @default("#8b5cf6")
+  discountPercent   Float   @default(60)
+  defaultDebtAmount Float   @default(1200.00)
+  defaultDebtDesc   String  @default("Dívida em aberto")
+  checkoutUrl       String  @default("")
+  scoreMin          Int     @default(280)
+  scoreMax          Int     @default(420)
+  scoreAfterPay     Int     @default(820)
+  headerTitle       String  @default("Regularize sua situação financeira")
+  headerSubtitle    String  @default("Consulte sua dívida e quite com até 60% de desconto")
+  urgencyText       String  @default("⚡ Oferta por tempo limitado — expira em breve!")
+  ctaText           String  @default("Pagar via PIX agora")
+  footerText        String  @default("Seus dados estão protegidos. Ambiente 100% seguro.")
+  faviconUrl        String  @default("")
+  bannerUrl         String  @default("")
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}

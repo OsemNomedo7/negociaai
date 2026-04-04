@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
   const settings = await prisma.settings.findUnique({ where: { id: 1 } });
   if (!settings) return NextResponse.json({});
 
-  // Retorna apenas campos públicos (sem dados sensíveis)
+  // Retorna apenas campos públicos
   return NextResponse.json({
     companyName: settings.companyName,
     companyLogo: settings.companyLogo,
@@ -17,6 +17,6 @@ export async function GET() {
     ctaText: settings.ctaText,
     footerText: settings.footerText,
     faviconUrl: settings.faviconUrl,
-    bannerUrl: settings.bannerUrl,
+    bannerImages: settings.bannerImages ?? "[]",
   });
 }

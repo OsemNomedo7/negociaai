@@ -17,6 +17,14 @@ export async function PUT(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
+  // Garantir que bannerImages seja string JSON válida
+  let bannerImages = body.bannerImages;
+  if (Array.isArray(bannerImages)) {
+    bannerImages = JSON.stringify(bannerImages.slice(0, 5));
+  } else if (typeof bannerImages !== "string") {
+    bannerImages = "[]";
+  }
+
   const settings = await prisma.settings.upsert({
     where: { id: 1 },
     update: {
@@ -37,9 +45,9 @@ export async function PUT(req: NextRequest) {
       ctaText: body.ctaText,
       footerText: body.footerText,
       faviconUrl: body.faviconUrl,
-      bannerUrl: body.bannerUrl,
+      bannerImages,
     },
-    create: { id: 1, ...body },
+    create: { id: 1, ...body, bannerImages },
   });
 
   return NextResponse.json(settings);

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import ImageUpload from "@/components/ImageUpload";
+import BannerCarouselEditor from "@/components/BannerCarouselEditor";
 
 interface Settings {
   companyName: string;
@@ -21,7 +23,7 @@ interface Settings {
   ctaText: string;
   footerText: string;
   faviconUrl: string;
-  bannerUrl: string;
+  bannerImages: string[];
 }
 
 const DEFAULT: Settings = {
@@ -42,7 +44,7 @@ const DEFAULT: Settings = {
   ctaText: "Pagar via PIX agora",
   footerText: "Seus dados estão protegidos. Ambiente 100% seguro.",
   faviconUrl: "",
-  bannerUrl: "",
+  bannerImages: [],
 };
 
 type SectionKey = "empresa" | "cobranca" | "score" | "copy" | "checkout";
@@ -54,6 +56,14 @@ const SECTIONS: { key: SectionKey; icon: string; label: string }[] = [
   { key: "copy", icon: "✍️", label: "Copywriting" },
   { key: "checkout", icon: "💳", label: "Checkout" },
 ];
+
+function parseBannerImages(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try { return JSON.parse(raw); } catch { return []; }
+  }
+  return [];
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -69,16 +79,28 @@ export default function SettingsPage() {
         if (r.status === 401) { router.push("/admin/login"); return null; }
         return r.json();
       })
-      .then((data) => { if (data) setSettings({ ...DEFAULT, ...data }); })
+      .then((data) => {
+        if (data) {
+          setSettings({
+            ...DEFAULT,
+            ...data,
+            bannerImages: parseBannerImages(data.bannerImages),
+          });
+        }
+      })
       .finally(() => setLoading(false));
   }, [router]);
 
   async function handleSave() {
     setSaving(true);
+    const payload = {
+      ...settings,
+      bannerImages: JSON.stringify(settings.bannerImages),
+    };
     const res = await fetch("/api/admin/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settings),
+      body: JSON.stringify(payload),
     });
     if (res.ok) {
       setSaved(true);
@@ -87,7 +109,7 @@ export default function SettingsPage() {
     setSaving(false);
   }
 
-  function upd(key: keyof Settings, value: string | number) {
+  function upd<K extends keyof Settings>(key: K, value: Settings[K]) {
     setSettings((s) => ({ ...s, [key]: value }));
   }
 
@@ -141,45 +163,69 @@ export default function SettingsPage() {
       </div>
 
       {/* Section content */}
-      <div className="bg-white rounded-2xl card-shadow p-6 space-y-5">
+      <div className="bg-white rounded-2xl card-shadow p-6 space-y-6">
 
         {/* EMPRESA */}
         {activeSection === "empresa" && (
           <>
             <SectionTitle icon="🏢" title="Identidade da Empresa" />
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Nome da empresa" value={settings.companyName} onChange={(v) => upd("companyName", v)} />
-              <Field label="URL do logo (imagem)" value={settings.companyLogo} onChange={(v) => upd("companyLogo", v)} placeholder="https://..." />
-              <Field label="URL do favicon" value={settings.faviconUrl} onChange={(v) => upd("faviconUrl", v)} placeholder="https://..." />
-              <Field label="URL do banner" value={settings.bannerUrl} onChange={(v) => upd("bannerUrl", v)} placeholder="https://..." />
+
+            <Field
+              label="Nome da empresa"
+              value={settings.companyName}
+              onChange={(v) => upd("companyName", v)}
+            />
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <ImageUpload
+                label="Logo da empresa"
+                value={settings.companyLogo}
+                onChange={(v) => upd("companyLogo", v)}
+                hint="Recomendado: PNG transparente, mín. 200×60px"
+              />
+              <ImageUpload
+                label="Favicon"
+                value={settings.faviconUrl}
+                onChange={(v) => upd("faviconUrl", v)}
+                hint="Recomendado: ICO ou PNG 32×32px"
+                accept="image/x-icon,image/vnd.microsoft.icon,image/png,image/gif"
+              />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Cor primária</label>
-                <div className="flex items-center gap-3">
-                  <input type="color" value={settings.primaryColor}
-                    onChange={(e) => upd("primaryColor", e.target.value)}
-                    className="w-12 h-12 rounded-xl cursor-pointer border-2 border-gray-200 p-1" />
-                  <input type="text" value={settings.primaryColor}
-                    onChange={(e) => upd("primaryColor", e.target.value)}
-                    className="flex-1 px-3 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-mono" />
+
+            {/* Banner Carrossel */}
+            <div className="border-t border-gray-100 pt-5">
+              <BannerCarouselEditor
+                images={settings.bannerImages}
+                onChange={(imgs) => upd("bannerImages", imgs)}
+              />
+              {settings.bannerImages.length > 1 && (
+                <div className="mt-3 p-3 bg-indigo-50 rounded-xl">
+                  <p className="text-xs text-indigo-600 font-medium">
+                    🎠 O carrossel vai rotacionar automaticamente a cada 4 segundos na página pública.
+                    Arraste as miniaturas para reordenar.
+                  </p>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Cor secundária</label>
-                <div className="flex items-center gap-3">
-                  <input type="color" value={settings.secondaryColor}
-                    onChange={(e) => upd("secondaryColor", e.target.value)}
-                    className="w-12 h-12 rounded-xl cursor-pointer border-2 border-gray-200 p-1" />
-                  <input type="text" value={settings.secondaryColor}
-                    onChange={(e) => upd("secondaryColor", e.target.value)}
-                    className="flex-1 px-3 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-mono" />
-                </div>
-              </div>
+              )}
             </div>
-            {/* Preview */}
-            <div className="rounded-xl p-4 text-white text-center font-bold text-sm" style={{ background: grad }}>
-              Preview do gradiente: {settings.companyName}
+
+            {/* Cores */}
+            <div className="border-t border-gray-100 pt-5">
+              <p className="text-sm font-bold text-gray-700 mb-4">Cores do tema</p>
+              <div className="grid grid-cols-2 gap-4">
+                <ColorPicker
+                  label="Cor primária"
+                  value={settings.primaryColor}
+                  onChange={(v) => upd("primaryColor", v)}
+                />
+                <ColorPicker
+                  label="Cor secundária"
+                  value={settings.secondaryColor}
+                  onChange={(v) => upd("secondaryColor", v)}
+                />
+              </div>
+              <div className="mt-3 rounded-xl p-3 text-white text-center font-bold text-sm" style={{ background: grad }}>
+                Preview do gradiente — {settings.companyName}
+              </div>
             </div>
           </>
         )}
@@ -199,7 +245,6 @@ export default function SettingsPage() {
                     className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 text-sm" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">%</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Ex: 60 = 60% de desconto</p>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -210,9 +255,7 @@ export default function SettingsPage() {
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 text-sm" />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Descrição padrão
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Descrição padrão</label>
                 <input type="text" value={settings.defaultDebtDesc}
                   onChange={(e) => upd("defaultDebtDesc", e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 text-sm"
@@ -260,18 +303,6 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-400 mt-1">Prévia motivacional</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3 mt-2">
-              {[
-                { range: `${settings.scoreMin}–${settings.scoreMax}`, label: "Faixa exibida", color: "bg-red-50 text-red-700 border-red-200" },
-                { range: "Score baixo / em risco", label: "Mensagem exibida", color: "bg-orange-50 text-orange-700 border-orange-200" },
-                { range: `→ ${settings.scoreAfterPay}`, label: "Após regularizar", color: "bg-green-50 text-green-700 border-green-200" },
-              ].map((item) => (
-                <div key={item.label} className={`border rounded-xl p-3 ${item.color}`}>
-                  <p className="font-bold text-sm">{item.range}</p>
-                  <p className="text-xs mt-0.5 opacity-70">{item.label}</p>
-                </div>
-              ))}
-            </div>
           </>
         )}
 
@@ -284,17 +315,13 @@ export default function SettingsPage() {
                 onChange={(v) => upd("headerTitle", v)}
                 placeholder="Regularize sua situação financeira" />
               <Field label="Subtítulo (header)" value={settings.headerSubtitle}
-                onChange={(v) => upd("headerSubtitle", v)}
-                placeholder="Consulte sua dívida e quite com desconto" />
+                onChange={(v) => upd("headerSubtitle", v)} />
               <Field label="Texto de urgência (badge)" value={settings.urgencyText}
-                onChange={(v) => upd("urgencyText", v)}
-                placeholder="⚡ Oferta por tempo limitado!" />
+                onChange={(v) => upd("urgencyText", v)} />
               <Field label="Texto do botão CTA" value={settings.ctaText}
-                onChange={(v) => upd("ctaText", v)}
-                placeholder="Pagar via PIX agora" />
+                onChange={(v) => upd("ctaText", v)} />
               <Field label="Texto do rodapé" value={settings.footerText}
-                onChange={(v) => upd("footerText", v)}
-                placeholder="Seus dados estão protegidos." />
+                onChange={(v) => upd("footerText", v)} />
             </div>
           </>
         )}
@@ -306,28 +333,23 @@ export default function SettingsPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
               <p className="text-sm text-blue-700 font-medium">
                 Ao clicar em &quot;Pagar via PIX&quot;, o cliente é redirecionado para este link.
-                Use link de pagamento do Mercado Pago, PagSeguro, Hotmart, ou qualquer gateway.
               </p>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                URL de checkout (link de pagamento)
+                URL de checkout
               </label>
               <input type="url" value={settings.checkoutUrl}
                 onChange={(e) => upd("checkoutUrl", e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 text-sm"
-                placeholder="https://pagamento.mercadopago.com.br/..." />
+                placeholder="https://..." />
             </div>
-            <div className="mt-4">
-              {settings.checkoutUrl ? (
-                <a href={settings.checkoutUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-indigo-600 text-sm font-medium hover:underline">
-                  🔗 Testar link de checkout
-                </a>
-              ) : (
-                <p className="text-sm text-gray-400">Nenhum link configurado ainda.</p>
-              )}
-            </div>
+            {settings.checkoutUrl && (
+              <a href={settings.checkoutUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-indigo-600 text-sm font-medium hover:underline mt-2">
+                🔗 Testar link
+              </a>
+            )}
           </>
         )}
       </div>
@@ -344,27 +366,31 @@ function SectionTitle({ icon, title }: { icon: string; title: string }) {
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
+function Field({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
   return (
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 transition-colors text-sm"
-      />
+        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 transition-colors text-sm" />
+    </div>
+  );
+}
+
+function ColorPicker({ label, value, onChange }: {
+  label: string; value: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+      <div className="flex items-center gap-3">
+        <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
+          className="w-12 h-12 rounded-xl cursor-pointer border-2 border-gray-200 p-1" />
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
+          className="flex-1 px-3 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-mono" />
+      </div>
     </div>
   );
 }

@@ -49,7 +49,7 @@ model Settings {
   ctaText           String  @default("Pagar via PIX agora")
   footerText        String  @default("Seus dados estão protegidos. Ambiente 100% seguro.")
   faviconUrl        String  @default("")
-  bannerUrl         String  @default("")
+  bannerImages      String  @default("[]")
 }
 
 model Admin {

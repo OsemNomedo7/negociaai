@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { formatCPF, validateCPF } from "@/lib/cpf";
+import BannerCarousel from "@/components/BannerCarousel";
 
 interface DebtResult {
   found: boolean;
@@ -28,7 +29,7 @@ interface PublicSettings {
   urgencyText: string;
   ctaText: string;
   footerText: string;
-  bannerUrl: string;
+  bannerImages: string[];
 }
 
 function formatMoney(v: number) {
@@ -187,7 +188,7 @@ export default function HomePage() {
     urgencyText: "⚡ Oferta por tempo limitado — expira em breve!",
     ctaText: "Pagar via PIX agora",
     footerText: "Seus dados estão protegidos. Ambiente 100% seguro.",
-    bannerUrl: "",
+    bannerImages: [],
   });
 
   const [name, setName] = useState("");
@@ -201,7 +202,16 @@ export default function HomePage() {
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((data) => setSettings((s) => ({ ...s, ...data })))
+      .then((data) => {
+        const bannerImages = (() => {
+          if (Array.isArray(data.bannerImages)) return data.bannerImages;
+          if (typeof data.bannerImages === "string") {
+            try { return JSON.parse(data.bannerImages); } catch { return []; }
+          }
+          return [];
+        })();
+        setSettings((s) => ({ ...s, ...data, bannerImages }));
+      })
       .catch(() => {});
   }, []);
 
@@ -328,6 +338,13 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+
+          {/* Banner carrossel (quando configurado) */}
+          {settings.bannerImages.length > 0 && (
+            <div className="mt-2 rounded-2xl overflow-hidden shadow-lg">
+              <BannerCarousel images={settings.bannerImages} />
+            </div>
+          )}
         </div>
       </header>
 

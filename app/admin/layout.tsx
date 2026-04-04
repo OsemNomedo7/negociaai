@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ThemeProvider, useTheme } from "@/lib/theme";
 
 const NAV = [
-  { href: "/admin/dashboard", icon: "📊", label: "Dashboard" },
-  { href: "/admin/debtors", icon: "👥", label: "Devedores" },
-  { href: "/admin/logs", icon: "📋", label: "Logs" },
-  { href: "/admin/settings", icon: "⚙️", label: "Configurações" },
+  { href: "/admin/dashboard", icon: "▦", label: "Dashboard" },
+  { href: "/admin/debtors",   icon: "◎", label: "Devedores" },
+  { href: "/admin/logs",      icon: "≡", label: "Logs" },
+  { href: "/admin/settings",  icon: "⚙", label: "Configurações" },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggle } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -26,104 +28,116 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar overlay (mobile) */}
+    <div className="admin-root flex min-h-screen">
+
+      {/* Mobile overlay */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/60 z-20 lg:hidden backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar */}
+      {/* ── SIDEBAR ─────────────────────────────── */}
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-100 z-30
-        transition-transform duration-300 ease-in-out flex flex-col
+        fixed top-0 left-0 h-full w-60 z-30 flex flex-col
+        admin-sidebar border-r transition-transform duration-300
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0 lg:static lg:z-auto
       `}>
         {/* Logo */}
-        <div className="p-5 border-b border-gray-100">
+        <div className="px-5 py-5 border-b" style={{ borderColor: "var(--border)" }}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-glow-sm">
               <span className="text-white font-black text-sm">N</span>
             </div>
             <div>
-              <p className="font-black text-gray-800 text-sm">NegociAI</p>
-              <p className="text-gray-400 text-xs">Painel Admin</p>
+              <p className="font-black text-sm" style={{ color: "var(--text)" }}>NegociAI</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Painel Admin</p>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 space-y-1">
-          {NAV.map((item) => {
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {NAV.map(item => {
             const active = pathname === item.href;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                  ${active
-                    ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md"
-                    : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-600"
-                  }`}
-              >
-                <span className="text-base">{item.icon}</span>
-                {item.label}
+              <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}
+                className={`nav-item ${active ? "active" : ""}`}>
+                <span className="w-5 h-5 flex items-center justify-center text-base opacity-80">{item.icon}</span>
+                <span>{item.label}</span>
+                {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />}
               </Link>
             );
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-gray-100">
-          <Link
-            href="/"
-            target="_blank"
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all mb-1"
-          >
+        {/* Footer links */}
+        <div className="px-3 pb-4 space-y-1 border-t pt-3" style={{ borderColor: "var(--border)" }}>
+          <Link href="/" target="_blank" className="nav-item text-xs">
             <span>🌐</span> Ver página pública
           </Link>
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
-          >
-            <span>🚪</span> {loggingOut ? "Saindo..." : "Sair"}
+          <button onClick={handleLogout} disabled={loggingOut}
+            className="nav-item w-full text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-40">
+            <span>🚪</span>
+            <span>{loggingOut ? "Saindo..." : "Sair"}</span>
           </button>
         </div>
       </aside>
 
-      {/* Main */}
+      {/* ── MAIN ────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="bg-white border-b border-gray-100 px-5 py-4 flex items-center gap-4 sticky top-0 z-10">
-          <button
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+        <header className="admin-surface border-b sticky top-0 z-10"
+          style={{ borderColor: "var(--border)" }}>
+          <div className="flex items-center gap-3 px-5 py-3.5">
+            <button className="lg:hidden p-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-white/5 transition-colors"
+              onClick={() => setSidebarOpen(true)}>
+              <svg className="w-5 h-5" style={{ color: "var(--text)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
-          <div className="flex-1">
-            <p className="text-gray-800 font-semibold text-sm">
-              {NAV.find((n) => n.href === pathname)?.label || "Admin"}
-            </p>
-          </div>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Admin</span>
+              <span style={{ color: "var(--text-muted)" }}>/</span>
+              <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                {NAV.find(n => n.href === pathname)?.label || ""}
+              </span>
+            </div>
 
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-xs font-medium px-3 py-1.5 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            Online
+            {/* Status */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold"
+              style={{ borderColor: "rgba(16,185,129,0.3)", color: "#10b981", background: "rgba(16,185,129,0.08)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Online
+            </div>
+
+            {/* Theme toggle */}
+            <button onClick={toggle}
+              className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all hover:border-indigo-300"
+              style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+              title={theme === "dark" ? "Modo claro" : "Modo escuro"}>
+              <span className="text-lg transition-transform duration-300"
+                style={{ transform: theme === "dark" ? "rotate(0deg)" : "rotate(180deg)" }}>
+                {theme === "dark" ? "☀️" : "🌙"}
+              </span>
+            </button>
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 p-5 overflow-auto">{children}</main>
+        <main className="flex-1 p-5 md:p-6 overflow-auto">
+          {children}
+        </main>
       </div>
     </div>
+  );
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider>
+      <AdminInner>{children}</AdminInner>
+    </ThemeProvider>
   );
 }

@@ -30,6 +30,7 @@ interface PublicSettings {
   ctaText: string;
   footerText: string;
   bannerImages: string[];
+  logoHeight: number;
 }
 
 function formatMoney(v: number) {
@@ -189,6 +190,7 @@ export default function HomePage() {
     ctaText: "Pagar via PIX agora",
     footerText: "Seus dados estão protegidos. Ambiente 100% seguro.",
     bannerImages: [],
+    logoHeight: 44,
   });
 
   const [name, setName] = useState("");
@@ -210,7 +212,7 @@ export default function HomePage() {
           }
           return [];
         })();
-        setSettings((s) => ({ ...s, ...data, bannerImages }));
+        setSettings((s) => ({ ...s, ...data, bannerImages, logoHeight: data.logoHeight ?? 44 }));
       })
       .catch(() => {});
   }, []);
@@ -284,67 +286,82 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* HEADER */}
-      <header style={{ background: grad }} className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-20 -left-20 w-96 h-96 rounded-full bg-white/20 blur-3xl"></div>
-          <div className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full bg-white/20 blur-3xl"></div>
-        </div>
+      {/* HEADER — banner cobre todo o fundo */}
+      <header
+        className="relative overflow-hidden group"
+        style={{
+          background: settings.bannerImages.length === 0 ? grad : undefined,
+          minHeight: "420px",
+        }}
+      >
+        {/* Fundo gradiente (visível quando não há banner) */}
+        {settings.bannerImages.length === 0 && (
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="absolute -top-20 -left-20 w-96 h-96 rounded-full bg-white/20 blur-3xl" />
+            <div className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full bg-white/20 blur-3xl" />
+          </div>
+        )}
 
-        <div className="relative max-w-4xl mx-auto px-4 py-8">
-          {/* Logo/Nome */}
-          <div className="flex items-center gap-3 mb-8">
+        {/* Banner fullbleed como background */}
+        {settings.bannerImages.length > 0 && (
+          <BannerCarousel images={settings.bannerImages} fullBleed />
+        )}
+
+        {/* Conteúdo sobre o fundo */}
+        <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
+          {/* Navbar */}
+          <div className="flex items-center gap-3 mb-10">
             {settings.companyLogo ? (
-              <img src={settings.companyLogo} alt="Logo" className="h-10 object-contain" />
+              <img
+                src={settings.companyLogo}
+                alt={settings.companyName}
+                style={{ height: settings.logoHeight }}
+                className="object-contain drop-shadow-md"
+              />
             ) : (
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-                  <span className="text-white font-black text-lg">N</span>
+                  <span className="text-white font-black text-lg">
+                    {settings.companyName.charAt(0)}
+                  </span>
                 </div>
-                <span className="text-white font-bold text-xl">{settings.companyName}</span>
+                <span className="text-white font-bold text-xl drop-shadow">{settings.companyName}</span>
               </div>
             )}
             <div className="ml-auto">
-              <div className="flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+              <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                 <span className="text-white text-xs font-medium">100% Seguro</span>
               </div>
             </div>
           </div>
 
-          {/* Hero */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-4 py-2 mb-4 urgency-badge">
+          {/* Hero text */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-5 urgency-badge">
               <span className="text-yellow-300 text-sm font-bold">{settings.urgencyText}</span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-3">
+            <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4 drop-shadow-lg">
               {settings.headerTitle}
             </h1>
-            <p className="text-white/80 text-lg max-w-lg mx-auto">
+            <p className="text-white/90 text-lg max-w-lg mx-auto drop-shadow">
               {settings.headerSubtitle}
             </p>
           </div>
 
-          {/* Stats trust signals */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-3">
             {[
               { label: "Dívidas regularizadas", value: "47.832+" },
               { label: "Desconto médio", value: "60%" },
               { label: "Aprovação imediata", value: "99,8%" },
             ].map((s) => (
-              <div key={s.label} className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <div key={s.label} className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl p-3 text-center">
                 <div className="text-white font-black text-xl">{s.value}</div>
                 <div className="text-white/70 text-xs mt-0.5">{s.label}</div>
               </div>
             ))}
           </div>
-
-          {/* Banner carrossel (quando configurado) */}
-          {settings.bannerImages.length > 0 && (
-            <div className="mt-2 rounded-2xl overflow-hidden shadow-lg">
-              <BannerCarousel images={settings.bannerImages} />
-            </div>
-          )}
         </div>
       </header>
 
@@ -595,13 +612,134 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* FOOTER */}
-      <footer className="border-t border-gray-100 bg-white py-8 mt-8">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-gray-500 text-sm">{settings.footerText}</p>
-          <p className="text-gray-300 text-xs mt-2">
-            © {new Date().getFullYear()} {settings.companyName}. Todos os direitos reservados.
-          </p>
+      {/* FOOTER PROFISSIONAL */}
+      <footer className="mt-16" style={{ background: "linear-gradient(180deg, #0f1117 0%, #161b27 100%)" }}>
+        {/* Faixa de trust badges */}
+        <div className="border-b border-white/5">
+          <div className="max-w-5xl mx-auto px-6 py-4">
+            <div className="flex flex-wrap items-center justify-center gap-6 text-white/40 text-xs">
+              {[
+                { icon: "🔒", text: "SSL 256-bit" },
+                { icon: "🛡️", text: "LGPD Compliant" },
+                { icon: "✅", text: "Empresa Registrada" },
+                { icon: "⚡", text: "Atendimento 24h" },
+                { icon: "🏦", text: "Pagamentos Seguros" },
+              ].map((b) => (
+                <span key={b.text} className="flex items-center gap-1.5">
+                  <span>{b.icon}</span>{b.text}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Corpo do footer */}
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+
+            {/* Col 1 — Logo + descrição */}
+            <div className="md:col-span-2">
+              {settings.companyLogo ? (
+                <img
+                  src={settings.companyLogo}
+                  alt={settings.companyName}
+                  style={{ height: Math.min(settings.logoHeight, 52) }}
+                  className="object-contain mb-4 brightness-0 invert opacity-90"
+                />
+              ) : (
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: grad }}>
+                    <span className="text-white font-black">{settings.companyName.charAt(0)}</span>
+                  </div>
+                  <span className="text-white font-bold text-xl">{settings.companyName}</span>
+                </div>
+              )}
+              <p className="text-white/50 text-sm leading-relaxed max-w-xs">
+                {settings.footerText}
+              </p>
+              <p className="text-white/30 text-xs mt-4 leading-relaxed">
+                Empresa especializada em negociação e recuperação de crédito.
+                Atuamos com ética, transparência e respeito ao consumidor,
+                seguindo as normas do Banco Central e Código de Defesa do Consumidor.
+              </p>
+
+              {/* Redes sociais placeholder */}
+              <div className="flex items-center gap-3 mt-5">
+                {["f", "in", "ig"].map((s) => (
+                  <div key={s} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center cursor-pointer">
+                    <span className="text-white/50 text-xs font-bold">{s}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Col 2 — Informações */}
+            <div>
+              <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-4">Informações</p>
+              <ul className="space-y-2.5">
+                {[
+                  "Como funciona",
+                  "Política de Privacidade",
+                  "Termos de Uso",
+                  "LGPD",
+                  "Fale Conosco",
+                ].map((item) => (
+                  <li key={item}>
+                    <span className="text-white/40 hover:text-white/70 transition-colors text-sm cursor-pointer">
+                      {item}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Col 3 — Contato */}
+            <div>
+              <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-4">Contato</p>
+              <ul className="space-y-3">
+                {[
+                  { icon: "📧", text: "contato@negociai.com.br" },
+                  { icon: "📱", text: "0800 000 0000" },
+                  { icon: "⏰", text: "Seg-Sex, 8h às 20h" },
+                  { icon: "📍", text: "Brasil" },
+                ].map((item) => (
+                  <li key={item.text} className="flex items-start gap-2">
+                    <span className="text-white/30 mt-0.5">{item.icon}</span>
+                    <span className="text-white/45 text-sm">{item.text}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Selos */}
+              <div className="mt-5 flex gap-2">
+                <div className="border border-white/10 rounded-lg px-3 py-2 text-center">
+                  <p className="text-white/60 text-xs font-bold">PROCON</p>
+                  <p className="text-white/25 text-xs">Registrado</p>
+                </div>
+                <div className="border border-white/10 rounded-lg px-3 py-2 text-center">
+                  <p className="text-white/60 text-xs font-bold">BACEN</p>
+                  <p className="text-white/25 text-xs">Regulado</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rodapé inferior */}
+        <div className="border-t border-white/5">
+          <div className="max-w-5xl mx-auto px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-3">
+            <p className="text-white/25 text-xs text-center md:text-left">
+              © {new Date().getFullYear()} {settings.companyName}. Todos os direitos reservados.
+              CNPJ: 00.000.000/0001-00
+            </p>
+            <div className="flex items-center gap-4">
+              {["Privacidade", "Termos", "Cookies"].map((l) => (
+                <span key={l} className="text-white/25 hover:text-white/50 text-xs cursor-pointer transition-colors">
+                  {l}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </footer>
     </div>

@@ -18,5 +18,6 @@ export async function GET() {
     footerText: settings.footerText,
     faviconUrl: settings.faviconUrl,
     bannerImages: settings.bannerImages ?? "[]",
+    logoHeight: settings.logoHeight ?? 44,
   });
 }

@@ -46,6 +46,7 @@ export async function PUT(req: NextRequest) {
       footerText: body.footerText,
       faviconUrl: body.faviconUrl,
       bannerImages,
+      logoHeight: body.logoHeight !== undefined ? parseInt(body.logoHeight) : undefined,
     },
     create: { id: 1, ...body, bannerImages },
   });

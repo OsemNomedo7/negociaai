@@ -50,6 +50,7 @@ model Settings {
   footerText        String  @default("Seus dados estão protegidos. Ambiente 100% seguro.")
   faviconUrl        String  @default("")
   bannerImages      String  @default("[]")
+  logoHeight        Int     @default(44)
 }
 
 model Admin {

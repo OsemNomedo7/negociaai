@@ -8,6 +8,7 @@ import BannerCarouselEditor from "@/components/BannerCarouselEditor";
 interface Settings {
   companyName: string;
   companyLogo: string;
+  logoHeight: number;
   primaryColor: string;
   secondaryColor: string;
   discountPercent: number;
@@ -29,6 +30,7 @@ interface Settings {
 const DEFAULT: Settings = {
   companyName: "NegociAI",
   companyLogo: "",
+  logoHeight: 44,
   primaryColor: "#6366f1",
   secondaryColor: "#8b5cf6",
   discountPercent: 60,
@@ -85,6 +87,7 @@ export default function SettingsPage() {
             ...DEFAULT,
             ...data,
             bannerImages: parseBannerImages(data.bannerImages),
+            logoHeight: data.logoHeight ?? DEFAULT.logoHeight,
           });
         }
       })
@@ -177,12 +180,45 @@ export default function SettingsPage() {
             />
 
             <div className="grid md:grid-cols-2 gap-6">
-              <ImageUpload
-                label="Logo da empresa"
-                value={settings.companyLogo}
-                onChange={(v) => upd("companyLogo", v)}
-                hint="Recomendado: PNG transparente, mín. 200×60px"
-              />
+              <div className="space-y-3">
+                <ImageUpload
+                  label="Logo da empresa"
+                  value={settings.companyLogo}
+                  onChange={(v) => upd("companyLogo", v)}
+                  hint="Recomendado: PNG transparente, mín. 200×60px"
+                />
+                {/* Controle de tamanho do logo */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Tamanho do logo — <span className="font-normal text-indigo-600">{settings.logoHeight}px</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={24}
+                    max={120}
+                    step={4}
+                    value={settings.logoHeight}
+                    onChange={(e) => upd("logoHeight", Number(e.target.value))}
+                    className="w-full accent-indigo-500"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+                    <span>24px (pequeno)</span>
+                    <span>120px (grande)</span>
+                  </div>
+                  {/* Preview ao vivo */}
+                  {settings.companyLogo && (
+                    <div className="mt-2 p-3 rounded-xl border border-gray-200 bg-gray-900 flex items-center gap-3">
+                      <img
+                        src={settings.companyLogo}
+                        alt="preview"
+                        style={{ height: settings.logoHeight }}
+                        className="object-contain"
+                      />
+                      <span className="text-white/40 text-xs">preview no header</span>
+                    </div>
+                  )}
+                </div>
+              </div>
               <ImageUpload
                 label="Favicon"
                 value={settings.faviconUrl}

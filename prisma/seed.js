@@ -23,21 +23,21 @@ async function main() {
   const debtors = [
     {
       name: "João Carlos Silva",
-      cpf: "123.456.789-00",
+      cpf: "529.982.247-25",
       amount: 2380.0,
       description: "Empréstimo pessoal — Banco XYZ",
       status: "PENDENTE",
     },
     {
       name: "Maria Aparecida Souza",
-      cpf: "987.654.321-00",
+      cpf: "111.444.777-35",
       amount: 5150.0,
       description: "Cartão de crédito — Financeira ABC",
       status: "PENDENTE",
     },
     {
       name: "Carlos Eduardo Lima",
-      cpf: "456.789.123-00",
+      cpf: "871.188.656-31",
       amount: 870.0,
       description: "Mensalidade em atraso — Loja DEF",
       status: "PENDENTE",

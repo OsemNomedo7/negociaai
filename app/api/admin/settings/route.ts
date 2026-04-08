@@ -9,8 +9,7 @@ export async function GET(req: NextRequest) {
   const settings = await prisma.settings.findUnique({ where: { id: 1 } });
   if (!settings) return NextResponse.json({});
 
-  const raw = await prisma.$queryRaw<{ logoHeight: number }[]>`SELECT logoHeight FROM Settings WHERE id = 1`;
-  return NextResponse.json({ ...settings, logoHeight: raw[0]?.logoHeight ?? 44 });
+  return NextResponse.json(settings);
 }
 
 export async function PUT(req: NextRequest) {
@@ -24,7 +23,13 @@ export async function PUT(req: NextRequest) {
   if (Array.isArray(bannerImages)) bannerImages = JSON.stringify(bannerImages.slice(0, 5));
   else if (typeof bannerImages !== "string") bannerImages = "[]";
 
-  // Campos explícitos — sem spread de body para evitar campos desconhecidos pelo Prisma client
+  const pageContent = body.pageContent != null
+    ? (typeof body.pageContent === "string" ? body.pageContent : JSON.stringify(body.pageContent))
+    : undefined;
+  const colorScheme = body.colorScheme != null
+    ? (typeof body.colorScheme === "string" ? body.colorScheme : JSON.stringify(body.colorScheme))
+    : undefined;
+
   const data = {
     companyName:       typeof body.companyName       === "string" ? body.companyName       : undefined,
     companyLogo:       typeof body.companyLogo       === "string" ? body.companyLogo       : undefined,
@@ -43,10 +48,15 @@ export async function PUT(req: NextRequest) {
     ctaText:           typeof body.ctaText           === "string" ? body.ctaText           : undefined,
     footerText:        typeof body.footerText        === "string" ? body.footerText        : undefined,
     faviconUrl:        typeof body.faviconUrl        === "string" ? body.faviconUrl        : undefined,
+    logoHeight:        body.logoHeight != null ? Math.min(Math.max(parseInt(body.logoHeight) || 44, 24), 120) : undefined,
+    pageTitle:         typeof body.pageTitle         === "string" ? body.pageTitle.trim() || "NegociAI" : undefined,
+    whatsappNumber:    typeof body.whatsappNumber    === "string" ? body.whatsappNumber    : undefined,
+    webhookSecret:     typeof body.webhookSecret     === "string" ? body.webhookSecret     : undefined,
     bannerImages,
+    pageContent,
+    colorScheme,
   };
 
-  // Remove undefined para não sobrescrever com undefined
   const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
 
   const settings = await prisma.settings.upsert({
@@ -71,16 +81,15 @@ export async function PUT(req: NextRequest) {
       ctaText:           data.ctaText           ?? "Pagar via PIX agora",
       footerText:        data.footerText        ?? "Ambiente 100% seguro.",
       faviconUrl:        data.faviconUrl        ?? "",
-      bannerImages,
+      bannerImages:      bannerImages           ?? "[]",
+      logoHeight:        data.logoHeight        ?? 44,
+      pageTitle:         data.pageTitle         ?? "NegociAI",
+      whatsappNumber:    data.whatsappNumber    ?? "",
+      webhookSecret:     data.webhookSecret     ?? "",
+      pageContent:       pageContent            ?? "{}",
+      colorScheme:       colorScheme            ?? "{}",
     },
   });
 
-  // logoHeight via raw SQL (fora do Prisma client gerado)
-  if (body.logoHeight != null) {
-    const lh = Math.min(Math.max(parseInt(body.logoHeight) || 44, 24), 120);
-    await prisma.$executeRaw`UPDATE Settings SET logoHeight = ${lh} WHERE id = 1`;
-  }
-
-  const raw = await prisma.$queryRaw<{ logoHeight: number }[]>`SELECT logoHeight FROM Settings WHERE id = 1`;
-  return NextResponse.json({ ...settings, logoHeight: raw[0]?.logoHeight ?? 44 });
+  return NextResponse.json(settings);
 }

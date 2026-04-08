@@ -45,11 +45,8 @@ async function main() {
   ];
 
   for (const d of debtors) {
-    await prisma.debtor.upsert({
-      where: { cpf: d.cpf },
-      update: {},
-      create: d,
-    });
+    const existing = await prisma.debtor.findFirst({ where: { cpf: d.cpf, campaignId: null } });
+    if (!existing) await prisma.debtor.create({ data: d });
   }
 
   console.log("✅ Seed concluído!");

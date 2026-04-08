@@ -68,6 +68,7 @@ model Campaign {
   ctaText          String   @default("Pagar via PIX agora")
   footerText       String   @default("Ambiente 100% seguro.")
   whatsappNumber   String   @default("")
+  bannerImages     String   @default("[]")
 
   debtors  Debtor[]
   logs     Log[]

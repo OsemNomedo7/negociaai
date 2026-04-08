@@ -24,7 +24,9 @@ export async function GET(req: NextRequest) {
         where: { campaignId: c.id, event: "CONSULTA" },
       });
       const { webhookSecret: _secret, ...rest } = c;
-      return { ...rest, stats: { consults, payments } };
+      let bannerImages: string[] = [];
+      try { bannerImages = JSON.parse(rest.bannerImages || "[]"); } catch { /* noop */ }
+      return { ...rest, bannerImages, stats: { consults, payments } };
     })
   );
 
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { name, slug, ...rest } = body as Record<string, unknown>;
+  const { name, slug, bannerImages, ...rest } = body as Record<string, unknown>;
 
   if (!name || typeof name !== "string" || name.trim().length < 2) {
     return NextResponse.json({ error: "Nome é obrigatório." }, { status: 400 });
@@ -61,10 +63,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Slug já está em uso." }, { status: 409 });
   }
 
+  const bannerImagesStr = Array.isArray(bannerImages)
+    ? JSON.stringify(bannerImages.slice(0, 5))
+    : typeof bannerImages === "string" ? bannerImages : "[]";
+
   const campaign = await prisma.campaign.create({
     data: {
       name: name.trim(),
       slug: cleanSlug,
+      bannerImages: bannerImagesStr,
       ...(rest as object),
     },
   });

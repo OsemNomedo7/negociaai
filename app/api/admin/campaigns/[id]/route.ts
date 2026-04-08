@@ -22,7 +22,9 @@ export async function GET(
   const consults = await prisma.log.count({ where: { campaignId: id, event: "CONSULTA" } });
   const payments = await prisma.log.count({ where: { campaignId: id, event: "PAGAMENTO_CONCLUIDO" } });
 
-  return NextResponse.json({ ...campaign, stats: { consults, payments } });
+  let bannerImages: string[] = [];
+  try { bannerImages = JSON.parse(campaign.bannerImages || "[]"); } catch { /* noop */ }
+  return NextResponse.json({ ...campaign, bannerImages, stats: { consults, payments } });
 }
 
 export async function PUT(
@@ -53,6 +55,13 @@ export async function PUT(
       return NextResponse.json({ error: "Slug já está em uso." }, { status: 409 });
     }
     body.slug = cleanSlug;
+  }
+
+  // Handle bannerImages serialization
+  if (body.bannerImages !== undefined) {
+    body.bannerImages = Array.isArray(body.bannerImages)
+      ? JSON.stringify(body.bannerImages.slice(0, 5))
+      : typeof body.bannerImages === "string" ? body.bannerImages : "[]";
   }
 
   // Strip readonly fields

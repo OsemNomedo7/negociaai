@@ -27,6 +27,7 @@ interface Campaign {
   ctaText: string;
   footerText: string;
   whatsappNumber: string;
+  bannerImages: string;
 }
 
 interface DebtResult {

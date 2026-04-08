@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import BannerCarouselEditor from "@/components/BannerCarouselEditor";
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 interface Campaign {
@@ -30,6 +31,7 @@ interface Campaign {
   ctaText: string;
   footerText: string;
   whatsappNumber: string;
+  bannerImages: string[];
   stats: { consults: number; payments: number };
   _count: { debtors: number; logs: number };
 }
@@ -69,6 +71,7 @@ const EMPTY_FORM: Omit<Campaign, "id" | "active" | "stats" | "_count"> = {
   ctaText: "Pagar via PIX agora",
   footerText: "Ambiente 100% seguro.",
   whatsappNumber: "",
+  bannerImages: [],
 };
 
 function slugify(str: string) {
@@ -159,6 +162,7 @@ function CampaignModal({
           ctaText: initial.ctaText ?? EMPTY_FORM.ctaText,
           footerText: initial.footerText ?? EMPTY_FORM.footerText,
           whatsappNumber: initial.whatsappNumber ?? "",
+          bannerImages: Array.isArray(initial.bannerImages) ? initial.bannerImages : [],
         }
       : {}),
   }));
@@ -249,10 +253,35 @@ function CampaignModal({
                 placeholder="minha-campanha"
               />
             </FieldGroup>
-            <FieldGroup label="Domínio customizado">
-              <Input value={form.customDomain ?? ""} onChange={v => set("customDomain", v)} placeholder="pague.suaempresa.com.br" />
+            <FieldGroup label="Título da página (SEO)">
+              <Input value={form.pageTitle} onChange={v => set("pageTitle", v)} placeholder="NegociAI" />
             </FieldGroup>
           </div>
+
+          {/* Domínio customizado */}
+          <FieldGroup label="Domínio customizado (opcional)">
+            <Input value={form.customDomain ?? ""} onChange={v => set("customDomain", v)} placeholder="pague.suaempresa.com.br" />
+          </FieldGroup>
+          {form.customDomain && (
+            <div style={{
+              padding: "12px 14px", borderRadius: 8,
+              background: "rgba(59,130,246,.06)", border: "1px solid rgba(59,130,246,.2)",
+              fontSize: 12, color: "rgba(248,250,252,.6)", lineHeight: 1.7,
+            }}>
+              <span style={{ color: "#60a5fa", fontWeight: 700 }}>Instruções DNS</span>
+              {" — aponte o domínio "}
+              <code style={{ background: "rgba(255,255,255,.08)", padding: "1px 5px", borderRadius: 4 }}>{form.customDomain}</code>
+              {" para este servidor adicionando um registro:"}
+              <br />
+              <code style={{ background: "rgba(255,255,255,.08)", padding: "2px 8px", borderRadius: 4, display: "inline-block", marginTop: 4 }}>
+                CNAME @ cname.vercel-dns.com
+              </code>
+              {" ou "}
+              <code style={{ background: "rgba(255,255,255,.08)", padding: "2px 8px", borderRadius: 4, display: "inline-block" }}>
+                A @ 76.76.21.21
+              </code>
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 80px", gap: 12 }}>
             <FieldGroup label="URL do logo">
@@ -262,6 +291,10 @@ function CampaignModal({
               <Input type="number" value={form.logoHeight} onChange={v => set("logoHeight", Number(v))} />
             </FieldGroup>
           </div>
+
+          <FieldGroup label="URL do favicon">
+            <Input value={form.faviconUrl} onChange={v => set("faviconUrl", v)} placeholder="https://...favicon.ico" />
+          </FieldGroup>
 
           <FieldGroup label="Nome da empresa">
             <Input value={form.companyName} onChange={v => set("companyName", v)} />
@@ -349,6 +382,44 @@ function CampaignModal({
           <FieldGroup label="Texto do rodapé">
             <Input value={form.footerText} onChange={v => set("footerText", v)} />
           </FieldGroup>
+
+          {/* Section: Banners */}
+          <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.3)", letterSpacing: ".1em", textTransform: "uppercase", marginTop: 8 }}>
+            Banners (até 5)
+          </p>
+          <BannerCarouselEditor
+            images={form.bannerImages}
+            onChange={imgs => set("bannerImages", imgs)}
+          />
+
+          {/* Section: Webhook */}
+          <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.3)", letterSpacing: ".1em", textTransform: "uppercase", marginTop: 8 }}>
+            Webhook de pagamento
+          </p>
+          <FieldGroup label="Token secreto">
+            <div style={{ display: "flex", gap: 8 }}>
+              <Input value={form.webhookSecret} onChange={v => set("webhookSecret", v)} placeholder="Token para validar o webhook" />
+              <button
+                type="button"
+                onClick={() => set("webhookSecret", Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2))}
+                style={{
+                  padding: "9px 14px", borderRadius: 8, whiteSpace: "nowrap",
+                  background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)",
+                  color: "rgba(248,250,252,.7)", fontSize: 12, fontFamily: "inherit", cursor: "pointer",
+                }}
+              >
+                Gerar
+              </button>
+            </div>
+          </FieldGroup>
+          {isEdit && form.slug && (
+            <div style={{ fontSize: 11, color: "rgba(248,250,252,.4)", lineHeight: 1.6 }}>
+              URL do webhook:{" "}
+              <code style={{ background: "rgba(255,255,255,.06)", padding: "2px 6px", borderRadius: 4 }}>
+                {typeof window !== "undefined" ? window.location.origin : ""}/api/webhook/payment?secret={form.webhookSecret || "<token>"}
+              </code>
+            </div>
+          )}
 
           {err && (
             <div style={{

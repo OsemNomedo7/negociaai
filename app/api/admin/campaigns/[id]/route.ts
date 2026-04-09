@@ -57,11 +57,17 @@ export async function PUT(
     body.slug = cleanSlug;
   }
 
-  // Handle bannerImages serialization
+  // Handle JSON fields serialization
   if (body.bannerImages !== undefined) {
     body.bannerImages = Array.isArray(body.bannerImages)
       ? JSON.stringify(body.bannerImages.slice(0, 5))
       : typeof body.bannerImages === "string" ? body.bannerImages : "[]";
+  }
+  if (body.pageContent !== undefined && typeof body.pageContent !== "string") {
+    body.pageContent = JSON.stringify(body.pageContent);
+  }
+  if (body.colorScheme !== undefined && typeof body.colorScheme !== "string") {
+    body.colorScheme = JSON.stringify(body.colorScheme);
   }
 
   // Strip readonly fields

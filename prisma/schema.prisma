@@ -69,6 +69,8 @@ model Campaign {
   footerText       String   @default("Ambiente 100% seguro.")
   whatsappNumber   String   @default("")
   bannerImages     String   @default("[]")
+  pageContent      String   @default("{}")
+  colorScheme      String   @default("{}")
 
   debtors  Debtor[]
   logs     Log[]

@@ -461,6 +461,9 @@ function CampaignModal({
 }
 
 /* ─── Debtors Modal ──────────────────────────────────────────────────────── */
+const INP = { padding: "8px 10px", borderRadius: 7, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#f8fafc", fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%" } as React.CSSProperties;
+const STATUS_OPTS = ["PENDENTE", "PAGO", "NEGOCIANDO", "CANCELADO"];
+
 function DebtorsModal({ campaign, onClose }: { campaign: Campaign; onClose: () => void }) {
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -468,9 +471,20 @@ function DebtorsModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
 
+  // Add form
   const [form, setForm] = useState({ name: "", cpf: "", amount: "", description: "Dívida em aberto", status: "PENDENTE" });
   const [adding, setAdding] = useState(false);
   const [addErr, setAddErr] = useState("");
+
+  // Edit
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<{ name: string; cpf: string; amount: string; description: string; status: string }>({ name: "", cpf: "", amount: "", description: "", status: "" });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editErr, setEditErr] = useState("");
+
+  // Delete
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadDebtors = useCallback(async (p = 1) => {
     setLoading(true);
@@ -481,124 +495,133 @@ function DebtorsModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
       setTotal(data.total || 0);
       setPages(data.pages || 1);
       setPage(p);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [campaign.id]);
 
   useEffect(() => { loadDebtors(1); }, [loadDebtors]);
 
+  function fmtCPF(v: string) {
+    const c = v.replace(/\D/g, "").slice(0, 11);
+    if (c.length <= 3) return c;
+    if (c.length <= 6) return `${c.slice(0,3)}.${c.slice(3)}`;
+    if (c.length <= 9) return `${c.slice(0,3)}.${c.slice(3,6)}.${c.slice(6)}`;
+    return `${c.slice(0,3)}.${c.slice(3,6)}.${c.slice(6,9)}-${c.slice(9)}`;
+  }
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    setAddErr("");
-    setAdding(true);
+    setAddErr(""); setAdding(true);
     try {
       const res = await fetch(`/api/admin/campaigns/${campaign.id}/debtors`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, amount: Number(form.amount) }),
       });
       const data = await res.json();
       if (!res.ok) { setAddErr(data.error || "Erro ao adicionar."); return; }
       setForm({ name: "", cpf: "", amount: "", description: "Dívida em aberto", status: "PENDENTE" });
       loadDebtors(1);
-    } catch {
-      setAddErr("Erro de conexão.");
-    } finally {
-      setAdding(false);
-    }
+    } catch { setAddErr("Erro de conexão."); }
+    finally { setAdding(false); }
   }
 
-  function formatCPFInput(v: string) {
-    const c = v.replace(/\D/g, "").slice(0, 11);
-    if (c.length <= 3) return c;
-    if (c.length <= 6) return `${c.slice(0, 3)}.${c.slice(3)}`;
-    if (c.length <= 9) return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6)}`;
-    return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
+  function startEdit(d: Debtor) {
+    setEditId(d.id);
+    setEditForm({ name: d.name, cpf: d.cpf, amount: String(d.amount), description: d.description, status: d.status });
+    setEditErr("");
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editId) return;
+    setEditErr(""); setEditSaving(true);
+    try {
+      const res = await fetch(`/api/admin/debtors/${editId}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...editForm, amount: Number(editForm.amount) }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEditErr(data.error || "Erro ao salvar."); return; }
+      setEditId(null);
+      loadDebtors(page);
+    } catch { setEditErr("Erro de conexão."); }
+    finally { setEditSaving(false); }
+  }
+
+  async function handleDelete(id: number) {
+    setDeleting(true);
+    try {
+      await fetch(`/api/admin/debtors/${id}`, { method: "DELETE" });
+      setDeleteId(null);
+      loadDebtors(page);
+    } catch { /* noop */ }
+    finally { setDeleting(false); }
   }
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 100,
-      background: "rgba(0,0,0,.75)", backdropFilter: "blur(6px)",
+      background: "rgba(0,0,0,.8)", backdropFilter: "blur(6px)",
       display: "flex", alignItems: "flex-start", justifyContent: "center",
       padding: "24px 16px", overflowY: "auto",
     }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{
-        width: "100%", maxWidth: 720,
+        width: "100%", maxWidth: 860,
         background: "#0f0f12", border: "1px solid rgba(255,255,255,.08)",
-        borderRadius: 16, overflow: "hidden",
-        boxShadow: "0 24px 80px rgba(0,0,0,.7)",
+        borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,.7)",
+        marginBottom: 24,
       }}>
         {/* Header */}
-        <div style={{
-          padding: "18px 22px", borderBottom: "1px solid rgba(255,255,255,.06)",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-        }}>
+        <div style={{ padding: "18px 24px", borderBottom: "1px solid rgba(255,255,255,.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f8fafc" }}>Devedores — {campaign.name}</h2>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,.4)", marginTop: 2 }}>{total} registros</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,.4)", marginTop: 2 }}>{total} registros cadastrados</p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.4)", display: "flex" }}>
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Add form */}
-        <div style={{
-          padding: "16px 22px", borderBottom: "1px solid rgba(255,255,255,.06)",
-          background: "rgba(255,255,255,.02)",
-        }}>
+        <div style={{ padding: "16px 24px", borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 12 }}>
             Adicionar devedor
           </p>
           <form onSubmit={handleAdd}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1.5fr", gap: 10, marginBottom: 10 }}>
-              <input placeholder="Nome completo" required value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                style={{ padding: "8px 10px", borderRadius: 7, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#f8fafc", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
-              <input placeholder="000.000.000-00" required value={form.cpf}
-                onChange={e => setForm(f => ({ ...f, cpf: formatCPFInput(e.target.value) }))}
-                style={{ padding: "8px 10px", borderRadius: 7, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#f8fafc", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
-              <input placeholder="Valor R$" type="number" required min="0.01" step="0.01" value={form.amount}
-                onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                style={{ padding: "8px 10px", borderRadius: 7, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#f8fafc", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1.2fr 1fr 1.5fr 1fr", gap: 8, marginBottom: 10 }}>
+              <input placeholder="Nome completo *" required value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={INP} />
+              <input placeholder="000.000.000-00 *" required value={form.cpf}
+                onChange={e => setForm(f => ({ ...f, cpf: fmtCPF(e.target.value) }))} style={INP} />
+              <input placeholder="Valor R$ *" type="number" required min="0.01" step="0.01" value={form.amount}
+                onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} style={INP} />
               <input placeholder="Descrição" value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                style={{ padding: "8px 10px", borderRadius: 7, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#f8fafc", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={INP} />
+              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                style={{ ...INP, cursor: "pointer" }}>
+                {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
-            {addErr && (
-              <p style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>{addErr}</p>
-            )}
-            <button type="submit" disabled={adding} style={{
-              padding: "8px 18px", borderRadius: 8,
-              background: adding ? "rgba(239,68,68,.4)" : "#ef4444",
-              border: "none", color: "#fff", fontSize: 13, fontWeight: 700,
-              fontFamily: "inherit", cursor: adding ? "not-allowed" : "pointer",
-            }}>
-              {adding ? "Adicionando..." : "Adicionar"}
+            {addErr && <p style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>{addErr}</p>}
+            <button type="submit" disabled={adding} style={{ padding: "8px 20px", borderRadius: 8, background: "#6366f1", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: adding ? "not-allowed" : "pointer", opacity: adding ? .6 : 1 }}>
+              {adding ? "Adicionando..." : "+ Adicionar"}
             </button>
           </form>
         </div>
 
         {/* Table */}
-        <div style={{ overflowX: "auto" }}>
+        <div style={{ overflowX: "auto", maxHeight: "50vh", overflowY: "auto" }}>
           {loading ? (
-            <p style={{ padding: 24, textAlign: "center", color: "rgba(255,255,255,.4)", fontSize: 13 }}>
-              Carregando...
-            </p>
+            <p style={{ padding: 32, textAlign: "center", color: "rgba(255,255,255,.4)", fontSize: 13 }}>Carregando...</p>
           ) : debtors.length === 0 ? (
-            <p style={{ padding: 24, textAlign: "center", color: "rgba(255,255,255,.3)", fontSize: 13 }}>
-              Nenhum devedor cadastrado.
-            </p>
+            <p style={{ padding: 32, textAlign: "center", color: "rgba(255,255,255,.3)", fontSize: 13 }}>Nenhum devedor cadastrado.</p>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-                  {["Nome", "CPF", "Valor", "Descrição", "Status"].map(h => (
-                    <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "rgba(248,250,252,.35)", textTransform: "uppercase", letterSpacing: ".06em" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
+              <thead style={{ position: "sticky", top: 0, background: "#0f0f12", zIndex: 1 }}>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,.08)" }}>
+                  {["Nome", "CPF", "Valor", "Descrição", "Status", "Ações"].map(h => (
+                    <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "rgba(248,250,252,.3)", textTransform: "uppercase", letterSpacing: ".06em", whiteSpace: "nowrap" }}>
                       {h}
                     </th>
                   ))}
@@ -606,22 +629,63 @@ function DebtorsModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
               </thead>
               <tbody>
                 {debtors.map(d => (
-                  <tr key={d.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-                    <td style={{ padding: "10px 16px", fontSize: 13, color: "#f8fafc" }}>{d.name}</td>
-                    <td style={{ padding: "10px 16px", fontSize: 12, color: "rgba(255,255,255,.5)", fontFamily: "monospace" }}>{d.cpf}</td>
-                    <td style={{ padding: "10px 16px", fontSize: 13, color: "#f8fafc" }}>{fmtBRL(d.amount)}</td>
-                    <td style={{ padding: "10px 16px", fontSize: 12, color: "rgba(255,255,255,.5)" }}>{d.description}</td>
-                    <td style={{ padding: "10px 16px" }}>
-                      <span style={{
-                        fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
-                        background: d.status === "PAGO" ? "rgba(34,197,94,.12)" : "rgba(239,68,68,.1)",
-                        color: d.status === "PAGO" ? "#4ade80" : "#f87171",
-                        border: `1px solid ${d.status === "PAGO" ? "rgba(34,197,94,.2)" : "rgba(239,68,68,.2)"}`,
-                      }}>
-                        {d.status}
-                      </span>
-                    </td>
-                  </tr>
+                  editId === d.id ? (
+                    /* Edit row */
+                    <tr key={d.id} style={{ background: "rgba(99,102,241,.06)", borderBottom: "1px solid rgba(99,102,241,.15)" }}>
+                      <td colSpan={6} style={{ padding: "12px 14px" }}>
+                        <form onSubmit={handleEdit}>
+                          <div style={{ display: "grid", gridTemplateColumns: "2fr 1.2fr 1fr 1.5fr 1fr", gap: 8, marginBottom: 10 }}>
+                            <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome" required style={INP} />
+                            <input value={editForm.cpf} onChange={e => setEditForm(f => ({ ...f, cpf: fmtCPF(e.target.value) }))} placeholder="CPF" required style={INP} />
+                            <input value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} type="number" min="0.01" step="0.01" required placeholder="Valor" style={INP} />
+                            <input value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição" style={INP} />
+                            <select value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))} style={{ ...INP, cursor: "pointer" }}>
+                              {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                          {editErr && <p style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>{editErr}</p>}
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button type="submit" disabled={editSaving} style={{ padding: "7px 16px", borderRadius: 7, background: "#22c55e", border: "none", color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                              {editSaving ? "Salvando..." : "✓ Salvar"}
+                            </button>
+                            <button type="button" onClick={() => setEditId(null)} style={{ padding: "7px 14px", borderRadius: 7, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.6)", fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+                              Cancelar
+                            </button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  ) : (
+                    /* Normal row */
+                    <tr key={d.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)", transition: "background .15s" }}
+                      onMouseOver={e => (e.currentTarget.style.background = "rgba(255,255,255,.02)")}
+                      onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
+                      <td style={{ padding: "11px 14px", fontSize: 13, color: "#f8fafc" }}>{d.name}</td>
+                      <td style={{ padding: "11px 14px", fontSize: 12, color: "rgba(255,255,255,.5)", fontFamily: "monospace" }}>{d.cpf}</td>
+                      <td style={{ padding: "11px 14px", fontSize: 13, color: "#f8fafc", whiteSpace: "nowrap" }}>{fmtBRL(d.amount)}</td>
+                      <td style={{ padding: "11px 14px", fontSize: 12, color: "rgba(255,255,255,.45)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.description}</td>
+                      <td style={{ padding: "11px 14px" }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6,
+                          background: d.status === "PAGO" ? "rgba(34,197,94,.12)" : d.status === "NEGOCIANDO" ? "rgba(251,191,36,.1)" : d.status === "CANCELADO" ? "rgba(100,116,139,.1)" : "rgba(239,68,68,.1)",
+                          color: d.status === "PAGO" ? "#4ade80" : d.status === "NEGOCIANDO" ? "#fbbf24" : d.status === "CANCELADO" ? "#94a3b8" : "#f87171",
+                          border: `1px solid ${d.status === "PAGO" ? "rgba(34,197,94,.2)" : d.status === "NEGOCIANDO" ? "rgba(251,191,36,.2)" : d.status === "CANCELADO" ? "rgba(100,116,139,.2)" : "rgba(239,68,68,.2)"}`,
+                        }}>
+                          {d.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: "11px 14px" }}>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => startEdit(d)} style={{ padding: "5px 10px", borderRadius: 6, background: "rgba(99,102,241,.15)", border: "1px solid rgba(99,102,241,.3)", color: "#818cf8", fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                            Editar
+                          </button>
+                          <button onClick={() => setDeleteId(d.id)} style={{ padding: "5px 10px", borderRadius: 6, background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.2)", color: "#f87171", fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                            Excluir
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
                 ))}
               </tbody>
             </table>
@@ -630,19 +694,40 @@ function DebtorsModal({ campaign, onClose }: { campaign: Campaign; onClose: () =
 
         {/* Pagination */}
         {pages > 1 && (
-          <div style={{ padding: "12px 22px", borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
+          <div style={{ padding: "12px 24px", borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
             <button onClick={() => loadDebtors(page - 1)} disabled={page <= 1}
-              style={{ padding: "6px 12px", borderRadius: 7, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.6)", cursor: page <= 1 ? "not-allowed" : "pointer", fontSize: 12, fontFamily: "inherit" }}>
-              Anterior
+              style={{ padding: "6px 14px", borderRadius: 7, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.6)", cursor: page <= 1 ? "not-allowed" : "pointer", fontSize: 12, fontFamily: "inherit" }}>
+              ← Anterior
             </button>
             <span style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>{page} / {pages}</span>
             <button onClick={() => loadDebtors(page + 1)} disabled={page >= pages}
-              style={{ padding: "6px 12px", borderRadius: 7, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.6)", cursor: page >= pages ? "not-allowed" : "pointer", fontSize: 12, fontFamily: "inherit" }}>
-              Próximo
+              style={{ padding: "6px 14px", borderRadius: 7, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.6)", cursor: page >= pages ? "not-allowed" : "pointer", fontSize: 12, fontFamily: "inherit" }}>
+              Próximo →
             </button>
           </div>
         )}
       </div>
+
+      {/* Confirm delete dialog */}
+      {deleteId && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#1a1a1f", border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: "28px 32px", maxWidth: 380, width: "90%", textAlign: "center" }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🗑️</div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f8fafc", marginBottom: 8 }}>Excluir devedor?</h3>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,.45)", marginBottom: 24, lineHeight: 1.6 }}>
+              Esta ação não pode ser desfeita. Os logs relacionados também serão removidos.
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button onClick={() => setDeleteId(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.7)", fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button onClick={() => handleDelete(deleteId)} disabled={deleting} style={{ padding: "9px 20px", borderRadius: 9, background: "#ef4444", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                {deleting ? "Excluindo..." : "Confirmar exclusão"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -619,13 +619,16 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
       </header>
 
       {/* ── HERO ── */}
-      {pc.promoBannerUrl && (
-        <a href={pc.promoBannerLink || "#consultar"} style={{ display: "block", lineHeight: 0 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={pc.promoBannerUrl} alt="Promo" style={{ width: "100%", maxHeight: "60vh", objectFit: "cover", display: "block" }} />
-        </a>
-      )}
-      <section id="inicio" style={{ background: `linear-gradient(160deg, ${heroBg} 0%, ${primary}16 50%, ${heroBg} 100%)`, padding: "80px 24px 64px", minHeight: pc.promoBannerUrl ? "auto" : "88vh", display: "flex", alignItems: "center" }}>
+      {pc.promoBannerUrl ? (
+        /* Banner cobre 100% do hero — sem texto */
+        <section id="inicio" style={{ lineHeight: 0 }}>
+          <a href={pc.promoBannerLink || "#consultar"} style={{ display: "block" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={pc.promoBannerUrl} alt="Banner" style={{ width: "100%", maxHeight: "90vh", objectFit: "cover", display: "block" }} />
+          </a>
+        </section>
+      ) : (
+      <section id="inicio" style={{ background: `linear-gradient(160deg, ${heroBg} 0%, ${primary}16 50%, ${heroBg} 100%)`, padding: "80px 24px 64px", minHeight: "88vh", display: "flex", alignItems: "center" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
           <div className="hero-cols" style={{ display: "flex", gap: 56, alignItems: "center" }}>
             {/* Left */}
@@ -681,6 +684,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
       </section>
+      )}
 
       {/* ── BANNER CAROUSEL ── */}
       {banners.length > 0 && (

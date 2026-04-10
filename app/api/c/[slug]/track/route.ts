@@ -13,10 +13,7 @@ export async function POST(
     req.headers.get("x-real-ip") ||
     "unknown";
 
-  const campaign = await prisma.campaign.findUnique({
-    where: { slug: params.slug },
-  });
-
+  const campaign = await prisma.campaign.findUnique({ where: { slug: params.slug } });
   if (!campaign || !campaign.active) {
     return NextResponse.json({ error: "Campanha não encontrada." }, { status: 404 });
   }
@@ -25,29 +22,25 @@ export async function POST(
   if (!body) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
   const { name, cpf, event, debtorId } = body as {
-    name?: string;
-    cpf?: string;
-    event?: string;
-    debtorId?: number;
+    name?: string; cpf?: string; event?: string; debtorId?: number;
   };
 
   if (!name || !cpf || !event) {
     return NextResponse.json({ error: "Campos obrigatórios: name, cpf, event." }, { status: 400 });
   }
-
   if (!ALLOWED_EVENTS.includes(event)) {
     return NextResponse.json({ error: "Evento inválido." }, { status: 400 });
   }
 
   const geo = await getGeo(ip);
 
-  if (debtorId) {
-    await prisma.$executeRaw`INSERT INTO Log (name, cpf, event, ip, city, state, debtorId, campaignId, createdAt)
-      VALUES (${name.trim()}, ${cpf}, ${event}, ${geo.resolvedIp}, ${geo.city}, ${geo.state}, ${debtorId}, ${campaign.id}, datetime('now'))`;
-  } else {
-    await prisma.$executeRaw`INSERT INTO Log (name, cpf, event, ip, city, state, campaignId, createdAt)
-      VALUES (${name.trim()}, ${cpf}, ${event}, ${geo.resolvedIp}, ${geo.city}, ${geo.state}, ${campaign.id}, datetime('now'))`;
-  }
+  await prisma.log.create({
+    data: {
+      name: name.trim(), cpf, event,
+      ip: geo.resolvedIp, city: geo.city, state: geo.state,
+      debtorId: debtorId || null, campaignId: campaign.id,
+    },
+  });
 
   return NextResponse.json({ ok: true });
 }

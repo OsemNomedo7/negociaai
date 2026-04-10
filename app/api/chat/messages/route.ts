@@ -8,22 +8,16 @@ export async function GET(req: NextRequest) {
 
   if (!sid) return NextResponse.json({ error: "sid obrigatório" }, { status: 400 });
 
-  const session = await prisma.$queryRaw<{ id: number }[]>`
-    SELECT id FROM ChatSession WHERE visitorId = ${sid} LIMIT 1
-  `;
-  if (!session.length) return NextResponse.json({ messages: [] });
+  const session = await prisma.chatSession.findUnique({ where: { visitorId: sid } });
+  if (!session) return NextResponse.json({ messages: [] });
 
-  const sessionId = session[0].id;
+  const messages = await prisma.chatMessage.findMany({
+    where: { sessionId: session.id, id: { gt: after } },
+    orderBy: { id: "asc" },
+    select: { id: true, content: true, sender: true, createdAt: true },
+  });
 
-  const messages = await prisma.$queryRaw<{
-    id: number; content: string; sender: string; createdAt: string;
-  }[]>`
-    SELECT id, content, sender, createdAt FROM ChatMessage
-    WHERE sessionId = ${sessionId} AND id > ${after}
-    ORDER BY id ASC
-  `;
-
-  return NextResponse.json({ messages, sessionId });
+  return NextResponse.json({ messages, sessionId: session.id });
 }
 
 export async function POST(req: NextRequest) {
@@ -34,26 +28,15 @@ export async function POST(req: NextRequest) {
 
   const { sid, content } = body as { sid: string; content: string };
 
-  const session = await prisma.$queryRaw<{ id: number; status: string }[]>`
-    SELECT id, status FROM ChatSession WHERE visitorId = ${sid} LIMIT 1
-  `;
-  if (!session.length) return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
-  if (session[0].status === "CLOSED") return NextResponse.json({ error: "Chat encerrado" }, { status: 400 });
+  const session = await prisma.chatSession.findUnique({ where: { visitorId: sid } });
+  if (!session) return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
+  if (session.status === "CLOSED") return NextResponse.json({ error: "Chat encerrado" }, { status: 400 });
 
-  const sessionId = session[0].id;
-  const trimmed = content.trim().slice(0, 1000);
+  const msg = await prisma.chatMessage.create({
+    data: { sessionId: session.id, content: content.trim().slice(0, 1000), sender: "visitor" },
+  });
 
-  await prisma.$executeRaw`
-    INSERT INTO ChatMessage (sessionId, content, sender, read, createdAt)
-    VALUES (${sessionId}, ${trimmed}, 'visitor', 0, datetime('now'))
-  `;
-  await prisma.$executeRaw`
-    UPDATE ChatSession SET updatedAt = datetime('now') WHERE id = ${sessionId}
-  `;
+  await prisma.chatSession.update({ where: { id: session.id }, data: { updatedAt: new Date() } });
 
-  const msg = await prisma.$queryRaw<{ id: number; content: string; sender: string; createdAt: string }[]>`
-    SELECT id, content, sender, createdAt FROM ChatMessage WHERE sessionId = ${sessionId} ORDER BY id DESC LIMIT 1
-  `;
-
-  return NextResponse.json(msg[0]);
+  return NextResponse.json({ id: msg.id, content: msg.content, sender: msg.sender, createdAt: msg.createdAt });
 }

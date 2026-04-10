@@ -21,6 +21,7 @@ interface Campaign {
 interface PageContent {
   heroTag?: string; heroTitleLine1?: string; heroTitleAccent?: string;
   heroSubtitle?: string; heroCta1?: string; heroCta2?: string;
+  heroCheck1?: string; heroCheck2?: string; heroCheck3?: string;
   heroStat1Val?: string; heroStat1Lbl?: string;
   heroStat2Val?: string; heroStat2Lbl?: string;
   heroStat3Val?: string; heroStat3Lbl?: string;
@@ -50,6 +51,8 @@ interface PageContent {
   ctaCardTitle?: string; ctaCardDesc?: string; ctaCardBtn?: string;
   footerTagline?: string;
   socialX?: string; socialLinkedin?: string; socialFacebook?: string;
+  offerBenefits?: string; // JSON array de strings
+  chatCompanyName?: string; chatSubtitle?: string; chatWelcome?: string;
 }
 interface ColorScheme {
   heroBg?: string; accentColor?: string;
@@ -58,7 +61,6 @@ interface ColorScheme {
   footerBg?: string; footerTextColor?: string;
   titleColor?: string; subtitleColor?: string;
   cardBg?: string; cardBorder?: string;
-  inputBorder?: string; inputFocusBorder?: string;
   scoreColorBad?: string; scoreColorMid?: string; scoreColorGood?: string;
 }
 interface DebtResult {
@@ -68,6 +70,7 @@ interface DebtResult {
   status: string; discount: number; score: number;
   scoreAfterPay: number; checkoutUrl: string;
 }
+interface ChatMsg { id: number; content: string; sender: string; createdAt: string; }
 
 /* ─── Helpers ────────────────────────────────────────── */
 function parseJson<T>(raw: string | undefined | null, fallback: T): T {
@@ -82,7 +85,7 @@ function fmtBRL(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-/* ─── Sub-components ─────────────────────────────────── */
+/* ─── Banner Carousel ────────────────────────────────── */
 function BannerCarousel({ images, primary }: { images: string[]; primary: string }) {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
@@ -115,42 +118,233 @@ function BannerCarousel({ images, primary }: { images: string[]; primary: string
   );
 }
 
-function ScoreMeter({ score, scoreAfterPay, primary, colorBad = "#ef4444", colorMid = "#f59e0b", colorGood = "#22c55e" }: {
-  score: number; scoreAfterPay: number; primary: string;
-  colorBad?: string; colorMid?: string; colorGood?: string;
+/* ─── Circular Score ─────────────────────────────────── */
+function CircularScore({ score, colorBad, colorMid, colorGood }: {
+  score: number; colorBad: string; colorMid: string; colorGood: string;
 }) {
-  const pct = Math.min(100, Math.max(0, (score / 1000) * 100));
+  const pct = Math.min(100, Math.max(0, score / 1000));
   const color = score < 400 ? colorBad : score < 600 ? colorMid : colorGood;
+  const label = score < 400 ? "Score Baixo" : score < 600 ? "Score Regular" : "Score Bom";
+  const r = 44; const circ = 2 * Math.PI * r;
+  const dash = pct * circ;
   return (
-    <div style={{ width: "100%" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,.5)" }}>Score atual</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color }}>{score} pts</span>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      <div style={{ position: "relative", width: 120, height: 120 }}>
+        <svg width="120" height="120" style={{ transform: "rotate(-90deg)" }}>
+          <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="10" />
+          <circle cx="60" cy="60" r={r} fill="none" stroke={color} strokeWidth="10"
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+            style={{ transition: "stroke-dasharray 1s ease" }} />
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1 }}>{score}</span>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,.4)" }}>/1000</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color, marginTop: 2 }}>{Math.round(pct * 100)}%</span>
+        </div>
       </div>
-      <div style={{ height: 10, borderRadius: 99, background: "rgba(255,255,255,.08)", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: `linear-gradient(90deg, ${colorBad}, ${color})`, transition: "width 1s ease" }} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
-        <span style={{ fontSize: 11, color: colorBad }}>Ruim</span>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Regular</span>
-        <span style={{ fontSize: 11, color: colorGood }}>Bom</span>
-      </div>
-      <div style={{ marginTop: 12, padding: "8px 12px", borderRadius: 8, background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.2)", fontSize: 12, color: "#4ade80", textAlign: "center" }}>
-        Ao quitar, seu score pode chegar a <strong style={{ color: "#86efac" }}>{scoreAfterPay} pts</strong>
+      <span style={{ fontSize: 12, fontWeight: 600, color, padding: "3px 10px", borderRadius: 99, background: `${color}18`, border: `1px solid ${color}33` }}>{label}</span>
+      <div style={{ width: "100%", maxWidth: 200 }}>
+        <div style={{ height: 6, borderRadius: 99, background: `linear-gradient(90deg, ${colorBad}, ${colorMid}, ${colorGood})`, marginBottom: 4 }} />
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, color: colorBad }}>Ruim</span>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,.3)" }}>Regular</span>
+          <span style={{ fontSize: 10, color: colorGood }}>Bom</span>
+        </div>
       </div>
     </div>
   );
 }
 
+/* ─── Countdown ──────────────────────────────────────── */
 function Countdown() {
-  const [seconds, setSeconds] = useState(600);
+  const [s, setS] = useState(5999);
   useEffect(() => {
-    const t = setInterval(() => setSeconds(s => s > 0 ? s - 1 : 600), 1000);
+    const t = setInterval(() => setS(v => v > 0 ? v - 1 : 5999), 1000);
     return () => clearInterval(t);
   }, []);
-  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
-  const s = (seconds % 60).toString().padStart(2, "0");
-  return <span style={{ fontVariantNumeric: "tabular-nums" }}>{m}:{s}</span>;
+  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const sec = (s % 60).toString().padStart(2, "0");
+  return <span style={{ fontVariantNumeric: "tabular-nums" }}>{m}:{sec}</span>;
+}
+
+/* ─── Chat Widget ────────────────────────────────────── */
+function ChatWidget({ visitorId, primary, secondary, companyName, companyLogo, pc }: {
+  visitorId: string; primary: string; secondary: string;
+  companyName: string; companyLogo: string; pc: PageContent;
+}) {
+  const [open, setOpen] = useState(false);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [msgs, setMsgs] = useState<ChatMsg[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const lastIdRef = useRef(0);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const grad = `linear-gradient(135deg, ${primary}, ${secondary})`;
+
+  const chatCompany = pc.chatCompanyName || companyName;
+  const chatSub     = pc.chatSubtitle   || "Suporte online · Resposta rápida";
+  const chatWelcome = pc.chatWelcome    || "Olá! Como podemos ajudar você hoje?";
+
+  // Cria/recupera sessão ao abrir
+  useEffect(() => {
+    if (!open || sessionId) return;
+    fetch("/api/chat/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId }),
+    }).then(r => r.json()).then(d => {
+      if (d.id) { setSessionId(d.id); if (d.status === "CLOSED") setClosed(true); }
+    }).catch(() => {});
+  }, [open, sessionId, visitorId]);
+
+  // Poll mensagens
+  useEffect(() => {
+    if (!open || !sessionId) return;
+    const poll = async () => {
+      try {
+        const r = await fetch(`/api/chat/messages?sid=${visitorId}&after=${lastIdRef.current}`);
+        const d = await r.json();
+        if (d.messages?.length) {
+          setMsgs(prev => [...prev, ...d.messages]);
+          lastIdRef.current = d.messages[d.messages.length - 1].id;
+          if (d.messages.some((m: ChatMsg) => m.sender === "admin")) {
+            // noop — just show
+          }
+        }
+      } catch { /* noop */ }
+    };
+    poll();
+    const t = setInterval(poll, 3000);
+    return () => clearInterval(t);
+  }, [open, sessionId, visitorId]);
+
+  // Scroll para última msg
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
+
+  async function send() {
+    const text = input.trim();
+    if (!text || sending || closed) return;
+    setSending(true);
+    setInput("");
+    try {
+      const r = await fetch("/api/chat/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sid: visitorId, content: text }),
+      });
+      const d = await r.json();
+      if (d.id) { setMsgs(prev => [...prev, d]); lastIdRef.current = d.id; }
+    } catch { /* noop */ } finally { setSending(false); }
+  }
+
+  return (
+    <>
+      {/* Botão flutuante */}
+      <button onClick={() => setOpen(o => !o)} style={{
+        position: "fixed", bottom: 24, right: 24, zIndex: 1000,
+        width: 56, height: 56, borderRadius: "50%", background: grad,
+        border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: `0 4px 20px ${primary}66`, transition: "transform .2s",
+      }}
+        onMouseOver={e => (e.currentTarget.style.transform = "scale(1.08)")}
+        onMouseOut={e => (e.currentTarget.style.transform = "scale(1)")}>
+        {open ? (
+          <svg width="20" height="20" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg width="22" height="22" fill="white" viewBox="0 0 24 24">
+            <path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z" />
+          </svg>
+        )}
+      </button>
+
+      {/* Painel */}
+      {open && (
+        <div style={{
+          position: "fixed", bottom: 92, right: 24, zIndex: 999,
+          width: "min(360px, calc(100vw - 32px))", borderRadius: 16,
+          background: "#ffffff", boxShadow: "0 8px 40px rgba(0,0,0,.18)",
+          display: "flex", flexDirection: "column", overflow: "hidden",
+          fontFamily: "Inter, system-ui, sans-serif",
+        }}>
+          {/* Header */}
+          <div style={{ background: grad, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+              {companyLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={companyLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ color: "#fff", fontSize: 16, fontWeight: 800 }}>{chatCompany[0]}</span>
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: "#fff", fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{chatCompany}</div>
+              <div style={{ color: "rgba(255,255,255,.75)", fontSize: 12 }}>{chatSub}</div>
+            </div>
+            <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.8)", padding: 4, display: "flex" }}>
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px", minHeight: 220, maxHeight: 320, display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Welcome */}
+            <div style={{ textAlign: "center", padding: "12px 0 4px" }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>👋</div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>{chatWelcome}</p>
+              <p style={{ fontSize: 12, color: "#94a3b8" }}>Digite sua mensagem abaixo.</p>
+            </div>
+
+            {msgs.map(m => (
+              <div key={m.id} style={{ display: "flex", justifyContent: m.sender === "visitor" ? "flex-end" : "flex-start" }}>
+                <div style={{
+                  maxWidth: "80%", padding: "9px 13px", borderRadius: m.sender === "visitor" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
+                  background: m.sender === "visitor" ? grad : "#f1f5f9",
+                  color: m.sender === "visitor" ? "#fff" : "#1e293b",
+                  fontSize: 13, lineHeight: 1.5,
+                }}>
+                  {m.content}
+                </div>
+              </div>
+            ))}
+
+            {closed && (
+              <div style={{ textAlign: "center", fontSize: 12, color: "#94a3b8", padding: "8px 0" }}>
+                Chat encerrado.
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          {!closed && (
+            <div style={{ borderTop: "1px solid #e2e8f0", padding: "12px 16px", display: "flex", gap: 8, background: "#fff" }}>
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
+                placeholder="Digite sua mensagem..."
+                style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 10, padding: "9px 14px", fontSize: 13, outline: "none", fontFamily: "inherit", color: "#1e293b" }}
+              />
+              <button onClick={send} disabled={sending || !input.trim()} style={{
+                width: 38, height: 38, borderRadius: 10, background: grad,
+                border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: (!input.trim() || sending) ? .4 : 1, flexShrink: 0,
+              }}>
+                <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
+                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
 }
 
 /* ─── Page ───────────────────────────────────────────── */
@@ -220,7 +414,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
   }
 
   if (loading) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#09090b", color: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#09090b", fontFamily: "system-ui, sans-serif" }}>
       <div style={{ textAlign: "center" }}>
         <div style={{ width: 36, height: 36, border: "3px solid rgba(255,255,255,.1)", borderTopColor: "#6366f1", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -247,45 +441,64 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
   const cs = parseJson<ColorScheme>(campaign.colorScheme, {});
   const banners = parseBanners(campaign.bannerImages);
 
-  const heroBg        = cs.heroBg        || "#060A14";
-  const navBg         = cs.navBg         || "rgba(6,10,20,.88)";
-  const navTextColor  = cs.navTextColor  || "rgba(255,255,255,.75)";
-  const consultBg     = cs.consultBg     || "#F0F4F8";
-  const aboutBg       = cs.aboutBg       || "#ffffff";
-  const contactBg     = cs.contactBg     || "#F0F4F8";
-  const footerBg      = cs.footerBg      || "#060A14";
+  const heroBg       = cs.heroBg       || "#060A14";
+  const navBg        = cs.navBg        || "rgba(6,10,20,.9)";
+  const navTextColor = cs.navTextColor  || "rgba(255,255,255,.75)";
+  const consultBg    = cs.consultBg    || "#F0F4F8";
+  const aboutBg      = cs.aboutBg      || "#ffffff";
+  const contactBg    = cs.contactBg    || "#F0F4F8";
+  const footerBg     = cs.footerBg     || "#060A14";
   const footerTextColor = cs.footerTextColor || "rgba(255,255,255,.35)";
-  const titleColor    = cs.titleColor    || "#0F172A";
+  const titleColor   = cs.titleColor   || "#0F172A";
   const subtitleColor = cs.subtitleColor || "#64748b";
-  const cardBg        = cs.cardBg        || "#ffffff";
-  const cardBorder    = cs.cardBorder    || "#E8EEF8";
+  const cardBg       = cs.cardBg       || "#ffffff";
+  const cardBorder   = cs.cardBorder   || "#E8EEF8";
   const scoreColorBad  = cs.scoreColorBad  || "#ef4444";
   const scoreColorMid  = cs.scoreColorMid  || "#f59e0b";
   const scoreColorGood = cs.scoreColorGood || "#22c55e";
 
-  /* Hero texts */
-  const heroTag      = pc.heroTag       || campaign.urgencyText      || "⚡ Oferta por tempo limitado";
-  const heroTitle1   = pc.heroTitleLine1 || "Regularize sua situação";
-  const heroAccent   = pc.heroTitleAccent || "financeira agora";
-  const heroSubtitle = pc.heroSubtitle  || campaign.headerSubtitle   || "Quite sua dívida com até 60% de desconto.";
-  const heroCta1     = pc.heroCta1      || "Consultar minha dívida";
-  const heroCta2     = pc.heroCta2      || "Saiba mais";
-  const consultPrivacy = pc.consultPrivacy || "Consulta 100% gratuita e segura · Sem cadastro";
-
-  const stats = [
-    { val: pc.heroStat1Val || "R$ 2.8B+", lbl: pc.heroStat1Lbl || "Dívidas negociadas" },
-    { val: pc.heroStat2Val || "340K+",    lbl: pc.heroStat2Lbl || "CPFs regularizados" },
-    { val: pc.heroStat3Val || "60%",      lbl: pc.heroStat3Lbl || "Desconto médio" },
-    { val: pc.heroStat4Val || "4.9★",     lbl: pc.heroStat4Lbl || "Avaliação média" },
+  const heroTag    = pc.heroTag      || campaign.urgencyText || "🔥 Oferta por tempo limitado";
+  const heroTitle1 = pc.heroTitleLine1 || campaign.headerTitle || "Regularize sua situação";
+  const heroAccent = pc.heroTitleAccent || "financeira agora";
+  const heroSub    = pc.heroSubtitle  || campaign.headerSubtitle || "Quite sua dívida com até 60% de desconto.";
+  const heroCta1   = pc.heroCta1     || "Consultar CPF grátis";
+  const heroCta2   = pc.heroCta2     || "Saiba mais";
+  const heroChecks = [
+    pc.heroCheck1 || "Sem burocracia",
+    pc.heroCheck2 || "100% online",
+    pc.heroCheck3 || "Resultado imediato",
   ];
 
+  const stats = [
+    { val: pc.heroStat1Val || "R$ 2.8B+", lbl: pc.heroStat1Lbl || "Negociados" },
+    { val: pc.heroStat2Val || "+500 mil",  lbl: pc.heroStat2Lbl || "Pessoas ajudadas" },
+    { val: pc.heroStat3Val || "4.8★",      lbl: pc.heroStat3Lbl || "Avaliação média" },
+    { val: pc.heroStat4Val || `${campaign.discountPercent}%`, lbl: pc.heroStat4Lbl || "Descontos de" },
+  ];
+
+  // Benefícios da oferta
+  let offerBenefits: string[] = [
+    "Quitação definitiva da dívida",
+    "Aumento imediato do score de crédito",
+    "Acesso a financiamentos e crédito",
+    "Saída do cadastro de inadimplentes",
+    "Aprovação em cartões e empréstimos",
+    "Pagamento rápido via PIX",
+  ];
+  try {
+    if (pc.offerBenefits) {
+      const parsed = JSON.parse(pc.offerBenefits);
+      if (Array.isArray(parsed) && parsed.length) offerBenefits = parsed;
+    }
+  } catch { /* usa default */ }
+
   const features = [
-    { icon: pc.feat1Icon || "🔍", title: pc.feat1Title || "Transparência total",       desc: pc.feat1Desc || "Informações claras, sem surpresas ou taxas ocultas." },
-    { icon: pc.feat2Icon || "⚡", title: pc.feat2Title || "Negociação instantânea",    desc: pc.feat2Desc || "100% digital. Consulte e quite em minutos." },
-    { icon: pc.feat3Icon || "🛡️", title: pc.feat3Title || "Segurança garantida",       desc: pc.feat3Desc || "Criptografia de ponta a ponta. Seus dados protegidos." },
-    { icon: pc.feat4Icon || "📈", title: pc.feat4Title || "Score em alta",             desc: pc.feat4Desc || "Após quitar, seu score sobe automaticamente." },
-    { icon: pc.feat5Icon || "🤝", title: pc.feat5Title || "Descontos reais",           desc: pc.feat5Desc || "Negociamos com os credores para garantir os maiores descontos." },
-    { icon: pc.feat6Icon || "📞", title: pc.feat6Title || "Suporte humanizado",        desc: pc.feat6Desc || "Equipe disponível para te ajudar em cada etapa." },
+    { icon: pc.feat1Icon || "🔍", title: pc.feat1Title || "Transparência total",    desc: pc.feat1Desc || "Informações claras, sem surpresas ou taxas ocultas." },
+    { icon: pc.feat2Icon || "⚡", title: pc.feat2Title || "Negociação instantânea", desc: pc.feat2Desc || "100% digital. Consulte e quite em minutos." },
+    { icon: pc.feat3Icon || "🛡️", title: pc.feat3Title || "Segurança garantida",    desc: pc.feat3Desc || "Criptografia de ponta a ponta. Dados protegidos." },
+    { icon: pc.feat4Icon || "📈", title: pc.feat4Title || "Score em alta",          desc: pc.feat4Desc || "Após quitar, seu score sobe automaticamente." },
+    { icon: pc.feat5Icon || "🤝", title: pc.feat5Title || "Descontos reais",        desc: pc.feat5Desc || "Negociamos para garantir os maiores descontos." },
+    { icon: pc.feat6Icon || "📞", title: pc.feat6Title || "Suporte humanizado",     desc: pc.feat6Desc || "Equipe disponível para te ajudar em cada etapa." },
   ];
 
   const aboutStats = [
@@ -296,17 +509,17 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
   ];
 
   const contactCards = [
-    { icon: "📞", title: pc.contactPhone || "(11) 91234-5678", sub: pc.contactPhoneSub || "Seg–Sex, 8h às 20h" },
-    { icon: "✉️", title: pc.contactEmail || "suporte@negociai.com.br", sub: pc.contactEmailSub || "Resposta em até 2h úteis" },
-    { icon: "📍", title: pc.contactAddress || "Av. Paulista, 1000 — SP", sub: pc.contactAddressSub || "CEP 01310-100" },
-    { icon: "🕐", title: pc.contactHours || "Segunda à Sexta, 8h às 20h", sub: pc.contactHoursSub || "Sábados, 9h às 14h" },
+    { icon: "📞", title: pc.contactPhone || "(11) 91234-5678",              sub: pc.contactPhoneSub || "Seg–Sex, 8h às 20h" },
+    { icon: "✉️", title: pc.contactEmail || "suporte@negociai.com.br",      sub: pc.contactEmailSub || "Resposta em até 2h úteis" },
+    { icon: "📍", title: pc.contactAddress || "Av. Paulista, 1000 — SP",    sub: pc.contactAddressSub || "CEP 01310-100" },
+    { icon: "🕐", title: pc.contactHours || "Segunda à Sexta, 8h às 20h",   sub: pc.contactHoursSub || "Sábados, 9h às 14h" },
   ];
 
   const navLinks = [
-    { label: "Início",       id: "inicio" },
-    { label: "Consultar",    id: "consultar" },
-    { label: "Quem Somos",   id: "quem-somos" },
-    { label: "Contato",      id: "fale-conosco" },
+    { label: "Início",        id: "inicio" },
+    { label: "Consultar Dívida", id: "consultar" },
+    { label: "Quem Somos",    id: "quem-somos" },
+    { label: "Fale Conosco",  id: "fale-conosco" },
   ];
 
   return (
@@ -319,58 +532,48 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
         a { text-decoration: none; }
         .cp-input {
           width: 100%; padding: 14px 18px;
-          background: rgba(255,255,255,.07);
-          border: 1.5px solid rgba(255,255,255,.13);
+          background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.13);
           border-radius: 12px; color: #f8fafc; font-size: 15px; font-family: inherit;
           outline: none; transition: border-color .2s, box-shadow .2s;
         }
         .cp-input:focus { border-color: ${primary}; box-shadow: 0 0 0 3px ${primary}22; }
         .cp-input::placeholder { color: rgba(255,255,255,.25); }
         .cp-btn {
-          width: 100%; padding: 15px;
-          background: ${grad};
+          width: 100%; padding: 15px; background: ${grad};
           border: none; border-radius: 12px; color: #fff;
           font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
           letter-spacing: .02em; transition: opacity .2s, transform .1s;
         }
-        .cp-btn:hover { opacity: .9; }
+        .cp-btn:hover { opacity: .92; }
         .cp-btn:active { transform: scale(.99); }
         .cp-btn:disabled { opacity: .5; cursor: not-allowed; }
-        .cp-btn-outline {
-          padding: 14px 28px; border: 2px solid rgba(255,255,255,.2);
-          border-radius: 12px; color: rgba(255,255,255,.8); background: transparent;
-          font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
-          transition: border-color .2s, color .2s;
-        }
-        .cp-btn-outline:hover { border-color: rgba(255,255,255,.5); color: #fff; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         .fade-up { animation: fadeUp .4s ease forwards; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse-glow { 0%,100%{ box-shadow:0 0 30px ${primary}33 } 50%{ box-shadow:0 0 60px ${primary}66 } }
-        @keyframes float { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-8px) } }
-        .hero-card { animation: pulse-glow 4s ease-in-out infinite; }
+        @keyframes pulseGlow { 0%,100%{ box-shadow:0 0 30px ${primary}33 } 50%{ box-shadow:0 0 60px ${primary}66 } }
+        .hero-card { animation: pulseGlow 4s ease-in-out infinite; }
         @media(max-width:768px){
-          .hero-cols { flex-direction: column !important; }
-          .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
-          .feat-grid { grid-template-columns: 1fr !important; }
-          .about-stats { grid-template-columns: repeat(2,1fr) !important; }
-          .contact-grid { grid-template-columns: 1fr !important; }
-          .nav-links-desktop { display: none !important; }
-          .menu-btn { display: flex !important; }
+          .hero-cols { flex-direction:column !important; }
+          .stats-grid { grid-template-columns:repeat(2,1fr) !important; }
+          .result-cols { flex-direction:column !important; }
+          .offer-cols { flex-direction:column !important; }
+          .feat-grid { grid-template-columns:1fr !important; }
+          .about-stats { grid-template-columns:repeat(2,1fr) !important; }
+          .contact-grid { grid-template-columns:1fr !important; }
+          .nav-desktop { display:none !important; }
+          .menu-btn { display:flex !important; }
         }
         @media(min-width:769px){
-          .menu-btn { display: none !important; }
-          .nav-mobile { display: none !important; }
+          .menu-btn { display:none !important; }
+          .nav-mobile { display:none !important; }
         }
       `}</style>
 
-      {/* Favicon */}
       {campaign.faviconUrl && <link rel="icon" href={campaign.faviconUrl} />}
 
       {/* ── NAVBAR ── */}
-      <header style={{ position: "sticky", top: 0, zIndex: 100, background: navBg, backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,.07)", padding: "0 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-          {/* Logo */}
+      <header style={{ position: "sticky", top: 0, zIndex: 100, background: navBg, backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,.07)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
           <div style={{ flexShrink: 0 }}>
             {campaign.companyLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -380,8 +583,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
             )}
           </div>
 
-          {/* Links desktop */}
-          <nav className="nav-links-desktop" style={{ display: "flex", gap: 32 }}>
+          <nav className="nav-desktop" style={{ display: "flex", gap: 28 }}>
             {navLinks.map(l => (
               <button key={l.id} onClick={() => scrollTo(l.id)}
                 style={{ background: "none", border: "none", cursor: "pointer", color: navTextColor, fontSize: 14, fontWeight: 500, fontFamily: "inherit", transition: "color .2s" }}
@@ -392,13 +594,11 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
             ))}
           </nav>
 
-          {/* CTA nav */}
-          <button onClick={() => scrollTo("consultar")} className="nav-links-desktop"
-            style={{ background: grad, border: "none", borderRadius: 10, padding: "9px 20px", color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
-            Consultar dívida
+          <button onClick={() => scrollTo("consultar")} className="nav-desktop"
+            style={{ background: grad, border: "none", borderRadius: 10, padding: "9px 20px", color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap" }}>
+            Consultar minha dívida
           </button>
 
-          {/* Hamburguer */}
           <button className="menu-btn" onClick={() => setMenuOpen(o => !o)}
             style={{ background: "none", border: "none", cursor: "pointer", color: "#f8fafc", flexDirection: "column", gap: 5, padding: 4, display: "none" }}>
             <span style={{ display: "block", width: 22, height: 2, background: "currentColor", transition: "all .2s", transform: menuOpen ? "rotate(45deg) translateY(7px)" : "none" }} />
@@ -406,10 +606,8 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
             <span style={{ display: "block", width: 22, height: 2, background: "currentColor", transition: "all .2s", transform: menuOpen ? "rotate(-45deg) translateY(-7px)" : "none" }} />
           </button>
         </div>
-
-        {/* Mobile menu */}
         {menuOpen && (
-          <div className="nav-mobile" style={{ borderTop: "1px solid rgba(255,255,255,.07)", padding: "16px 0" }}>
+          <div className="nav-mobile" style={{ borderTop: "1px solid rgba(255,255,255,.07)", padding: "12px 0", background: navBg }}>
             {navLinks.map(l => (
               <button key={l.id} onClick={() => scrollTo(l.id)}
                 style={{ display: "block", width: "100%", background: "none", border: "none", textAlign: "left", padding: "12px 24px", color: navTextColor, fontSize: 15, fontFamily: "inherit", cursor: "pointer" }}>
@@ -421,54 +619,61 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
       </header>
 
       {/* ── HERO ── */}
-      <section id="inicio" style={{ background: `linear-gradient(160deg, ${heroBg} 0%, ${primary}14 50%, ${heroBg} 100%)`, padding: "80px 24px 60px", minHeight: "88vh", display: "flex", alignItems: "center" }}>
+      <section id="inicio" style={{ background: `linear-gradient(160deg, ${heroBg} 0%, ${primary}16 50%, ${heroBg} 100%)`, padding: "80px 24px 64px", minHeight: "88vh", display: "flex", alignItems: "center" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
-
-          {/* Promo banner (opcional) */}
           {pc.promoBannerUrl ? (
             <a href={pc.promoBannerLink || "#consultar"}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={pc.promoBannerUrl} alt="Promo" style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 16, marginBottom: 40 }} />
+              <img src={pc.promoBannerUrl} alt="Promo" style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 16, marginBottom: 48 }} />
             </a>
           ) : null}
 
-          <div className="hero-cols" style={{ display: "flex", gap: 48, alignItems: "center" }}>
+          <div className="hero-cols" style={{ display: "flex", gap: 56, alignItems: "center" }}>
             {/* Left */}
             <div style={{ flex: 1 }}>
-              {/* Tag */}
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 16px", borderRadius: 99, background: `${primary}18`, border: `1px solid ${primary}44`, fontSize: 13, fontWeight: 600, color: primary, marginBottom: 24 }}>
                 {heroTag}
-                <span style={{ color: "rgba(255,255,255,.35)", fontWeight: 400 }}>—</span>
-                <Countdown />
               </div>
-
-              {/* Title */}
-              <h1 style={{ fontSize: "clamp(28px, 4.5vw, 52px)", fontWeight: 900, lineHeight: 1.1, marginBottom: 20 }}>
+              <h1 style={{ fontSize: "clamp(28px, 4.5vw, 52px)", fontWeight: 900, lineHeight: 1.1, marginBottom: 16 }}>
                 <span style={{ color: "#f8fafc" }}>{heroTitle1} </span>
                 <span style={{ background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{heroAccent}</span>
               </h1>
-
-              <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "rgba(255,255,255,.55)", lineHeight: 1.7, marginBottom: 36, maxWidth: 500 }}>
-                {heroSubtitle}
+              <p style={{ fontSize: "clamp(15px, 2vw, 17px)", color: "rgba(255,255,255,.55)", lineHeight: 1.7, marginBottom: 20, maxWidth: 500 }}>
+                {heroSub}
               </p>
-
-              {/* CTAs */}
+              {/* Checkmarks */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", marginBottom: 36 }}>
+                {heroChecks.map((c, i) => (
+                  <span key={i} style={{ fontSize: 14, color: "rgba(255,255,255,.7)", display: "flex", alignItems: "center", gap: 6 }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="8" fill={primary} opacity=".2" />
+                      <path d="M5 8l2 2 4-4" stroke={primary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {c}
+                  </span>
+                ))}
+              </div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button onClick={() => scrollTo("consultar")} style={{ background: grad, border: "none", borderRadius: 12, padding: "15px 32px", color: "#fff", fontSize: 15, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
                   {heroCta1}
                 </button>
-                <button onClick={() => scrollTo("quem-somos")} className="cp-btn-outline">
+                <button onClick={() => scrollTo("quem-somos")} style={{ padding: "14px 28px", border: "2px solid rgba(255,255,255,.2)", borderRadius: 12, color: "rgba(255,255,255,.8)", background: "transparent", fontSize: 15, fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}>
                   {heroCta2}
                 </button>
               </div>
             </div>
 
             {/* Right — stats */}
-            <div style={{ flex: "0 0 auto", width: "min(360px, 100%)" }}>
+            <div style={{ flex: "0 0 auto", width: "min(340px,100%)" }}>
+              {campaign.companyLogo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={campaign.companyLogo} alt={campaign.companyName}
+                  style={{ height: Math.max(48, campaign.logoHeight || 60), objectFit: "contain", display: "block", margin: "0 auto 24px" }} />
+              )}
               <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {stats.map((s, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: "20px", textAlign: "center" }}>
-                    <div style={{ fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 800, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.val}</div>
+                  <div key={i} style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 16, padding: "20px 16px", textAlign: "center" }}>
+                    <div style={{ fontSize: "clamp(16px,2.5vw,24px)", fontWeight: 900, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.val}</div>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)", marginTop: 4 }}>{s.lbl}</div>
                   </div>
                 ))}
@@ -497,13 +702,12 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
 
       {/* ── CONSULTA ── */}
       <section id="consultar" style={{ background: consultBg, padding: "72px 24px" }}>
-        <div style={{ maxWidth: 640, margin: "0 auto" }}>
-          {/* Tag */}
+        <div style={{ maxWidth: 680, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: 99, background: `${primary}15`, border: `1px solid ${primary}30`, fontSize: 12, fontWeight: 700, color: primary, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 16 }}>
               {pc.consultTag || "Consulta gratuita"}
             </span>
-            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 36px)", fontWeight: 800, color: titleColor, marginBottom: 12 }}>
+            <h2 style={{ fontSize: "clamp(22px,3.5vw,36px)", fontWeight: 800, color: titleColor, marginBottom: 12 }}>
               {pc.consultTitle || "Consulte sua dívida"}
             </h2>
             <p style={{ fontSize: 15, color: subtitleColor, lineHeight: 1.7 }}>
@@ -524,54 +728,123 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
                   <input className="cp-input" type="text" inputMode="numeric" placeholder="000.000.000-00" value={cpf} onChange={handleCPFChange} required maxLength={14} />
                 </div>
                 {error && (
-                  <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.2)", color: "#f87171", fontSize: 13 }}>
-                    {error}
-                  </div>
+                  <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.2)", color: "#f87171", fontSize: 13 }}>{error}</div>
                 )}
                 <button className="cp-btn" type="submit" disabled={consulting}>
                   {consulting ? "Consultando..." : (pc.consultCta || "Consultar minha situação")}
                 </button>
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,.25)", textAlign: "center" }}>
-                  🔒 {consultPrivacy}
-                </p>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,.25)", textAlign: "center" }}>🔒 {pc.consultPrivacy || "Consulta 100% gratuita e segura · Sem cadastro"}</p>
               </form>
             ) : (
               <div className="fade-up">
-                <div style={{ textAlign: "center", marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Resultado para</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc" }}>{result.name}</div>
-                  <div style={{ fontSize: 13, color: "rgba(255,255,255,.4)", marginTop: 2 }}>CPF: {result.cpf}</div>
+                {/* Urgência */}
+                <div style={{ marginBottom: 20, padding: "12px 16px", borderRadius: 10, background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.25)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#f87171" }}>Dívida ativa localizada em seu nome</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,.45)", marginTop: 2 }}>Esta oferta é exclusiva e expira em: <Countdown /></div>
+                  </div>
+                  <span style={{ padding: "4px 10px", borderRadius: 6, background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em" }}>URGENTE</span>
                 </div>
 
-                <div style={{ marginBottom: 20 }}>
-                  <ScoreMeter score={result.score} scoreAfterPay={result.scoreAfterPay} primary={primary}
-                    colorBad={scoreColorBad} colorMid={scoreColorMid} colorGood={scoreColorGood} />
-                </div>
-
-                <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "18px 20px", marginBottom: 16, border: "1px solid rgba(255,255,255,.08)" }}>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)", marginBottom: 10 }}>{result.description}</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                    <div>
-                      <div style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "line-through", marginBottom: 2 }}>{fmtBRL(result.amount)}</div>
-                      <div style={{ fontSize: 30, fontWeight: 900, color: "#f8fafc" }}>{fmtBRL(result.discountedAmount)}</div>
+                {/* Dois cards */}
+                <div className="result-cols" style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+                  {/* Dados da Dívida */}
+                  <div style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.7)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>📋</span> Dados da Dívida
                     </div>
-                    <div style={{ padding: "8px 14px", borderRadius: 10, background: `${primary}22`, border: `1px solid ${primary}44`, fontSize: 16, fontWeight: 800, color: primary }}>
-                      -{result.discount}%
+                    {[
+                      { label: "Nome", value: result.name },
+                      { label: "CPF", value: result.cpf },
+                      { label: "Descrição", value: result.description },
+                      { label: "Status", value: result.status, badge: true },
+                    ].map(row => (
+                      <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                        <span style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>{row.label}</span>
+                        {row.badge ? (
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "rgba(239,68,68,.15)", color: "#f87171", border: "1px solid rgba(239,68,68,.3)" }}>{row.value}</span>
+                        ) : (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#f8fafc", maxWidth: 140, textAlign: "right", wordBreak: "break-word" }}>{row.value}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Análise de Crédito */}
+                  <div style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.7)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>📊</span> Análise de Crédito
+                    </div>
+                    <CircularScore score={result.score} colorBad={scoreColorBad} colorMid={scoreColorMid} colorGood={scoreColorGood} />
+                    <div style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "rgba(34,197,94,.06)", border: "1px solid rgba(34,197,94,.18)", textAlign: "center" }}>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", marginBottom: 4 }}>Após regularizar:</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: "#4ade80" }}>{result.scoreAfterPay} <span style={{ fontSize: 11, fontWeight: 400 }}>/1000 pontos</span></div>
+                      <div style={{ fontSize: 11, color: "#86efac", marginTop: 4 }}>+{result.scoreAfterPay - result.score} pts</div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,.3)", marginTop: 6 }}>Acesso a crédito, melhores taxas e oportunidades</div>
                     </div>
                   </div>
                 </div>
 
-                <button className="cp-btn" onClick={handleCheckout}>{campaign.ctaText}</button>
+                {/* Oferta */}
+                <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: "24px", marginBottom: 16 }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc", marginBottom: 4 }}>🎯 Oferta Especial de Quitação</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,.4)" }}>Pague agora e elimine sua dívida definitivamente</div>
+                  </div>
+
+                  <div className="offer-cols" style={{ display: "flex", gap: 20, marginBottom: 20 }}>
+                    {/* Preços */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, color: "rgba(255,255,255,.35)", textDecoration: "line-through" }}>{fmtBRL(result.amount)}</div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,.25)", marginBottom: 8 }}>Valor cheio</div>
+                      <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, background: `${scoreColorGood}22`, border: `1px solid ${scoreColorGood}44`, fontSize: 12, fontWeight: 800, color: scoreColorGood, marginBottom: 8 }}>
+                        -{result.discount}% OFF
+                      </div>
+                      <div style={{ fontSize: 32, fontWeight: 900, color: "#f8fafc", lineHeight: 1 }}>{fmtBRL(result.discountedAmount)}</div>
+                      <div style={{ fontSize: 12, color: scoreColorGood, marginTop: 4 }}>Economia de {fmtBRL(result.amount - result.discountedAmount)}</div>
+                    </div>
+
+                    {/* Benefícios */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.5)", marginBottom: 10 }}>O que você ganha:</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                        {offerBenefits.map((b, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: "rgba(255,255,255,.7)" }}>
+                            <span style={{ color: scoreColorGood, fontWeight: 700, flexShrink: 0 }}>✓</span>
+                            {b}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button className="cp-btn" onClick={handleCheckout} style={{ fontSize: 16, padding: "16px" }}>
+                    {campaign.ctaText || "Pagar via PIX agora"} →
+                  </button>
+
+                  {/* Trust badges */}
+                  <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "6px 20px", marginTop: 14 }}>
+                    {["🔒 Pagamento seguro", "⚡ PIX Instantâneo", "📄 Comprovante digital"].map(b => (
+                      <span key={b} style={{ fontSize: 11, color: "rgba(255,255,255,.3)" }}>{b}</span>
+                    ))}
+                  </div>
+                </div>
 
                 {campaign.whatsappNumber && (
                   <a href={`https://wa.me/${campaign.whatsappNumber.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(37,211,102,.08)", border: "1px solid rgba(37,211,102,.2)", color: "#4ade80", fontSize: 14, fontWeight: 600 }}>
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px", borderRadius: 10, background: "rgba(37,211,102,.08)", border: "1px solid rgba(37,211,102,.2)", color: "#4ade80", fontSize: 14, fontWeight: 600 }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                     </svg>
                     Tirar dúvidas no WhatsApp
                   </a>
                 )}
+
+                {/* Social proof */}
+                <p style={{ textAlign: "center", fontSize: 12, color: "rgba(255,255,255,.25)", marginTop: 16, lineHeight: 1.6 }}>
+                  Milhares de brasileiros regularizaram suas dívidas e hoje têm acesso a crédito, financiamentos e novas oportunidades.
+                  Não deixe uma dívida antiga bloquear o seu futuro. Este é o seu momento.
+                </p>
 
                 <button onClick={() => { setResult(null); setCpf(""); setName(""); trackedCheckout.current = false; }}
                   style={{ marginTop: 14, display: "block", width: "100%", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.3)", fontSize: 13, fontFamily: "inherit", textDecoration: "underline" }}>
@@ -594,12 +867,11 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
       {/* ── QUEM SOMOS ── */}
       <section id="quem-somos" style={{ background: aboutBg, padding: "80px 24px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          {/* Header */}
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: 99, background: `${primary}12`, border: `1px solid ${primary}28`, fontSize: 12, fontWeight: 700, color: primary, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 16 }}>
               {pc.aboutTag || "Nossa empresa"}
             </span>
-            <h2 style={{ fontSize: "clamp(24px, 3.5vw, 40px)", fontWeight: 800, color: titleColor, marginBottom: 16 }}>
+            <h2 style={{ fontSize: "clamp(24px,3.5vw,40px)", fontWeight: 800, color: titleColor, marginBottom: 16 }}>
               {pc.aboutTitle || "Quem somos"}
             </h2>
             <p style={{ fontSize: 16, color: subtitleColor, maxWidth: 600, margin: "0 auto", lineHeight: 1.7 }}>
@@ -607,17 +879,15 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
             </p>
           </div>
 
-          {/* Stats */}
           <div className="about-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 56 }}>
             {aboutStats.map((s, i) => (
               <div key={i} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: "28px 20px", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <div style={{ fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 900, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>{s.val}</div>
+                <div style={{ fontSize: "clamp(20px,3vw,30px)", fontWeight: 900, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>{s.val}</div>
                 <div style={{ fontSize: 13, color: subtitleColor }}>{s.lbl}</div>
               </div>
             ))}
           </div>
 
-          {/* Features */}
           <div className="feat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
             {features.map((f, i) => (
               <div key={i} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: "28px 24px", boxShadow: "0 2px 12px rgba(0,0,0,.05)" }}>
@@ -645,7 +915,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
             <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: 99, background: `${primary}12`, border: `1px solid ${primary}28`, fontSize: 12, fontWeight: 700, color: primary, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 16 }}>
               {pc.contactTag || "Atendimento"}
             </span>
-            <h2 style={{ fontSize: "clamp(24px, 3.5vw, 40px)", fontWeight: 800, color: titleColor, marginBottom: 12 }}>
+            <h2 style={{ fontSize: "clamp(24px,3.5vw,40px)", fontWeight: 800, color: titleColor, marginBottom: 12 }}>
               {pc.contactTitle || "Fale conosco"}
             </h2>
             <p style={{ fontSize: 15, color: subtitleColor, maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>
@@ -665,9 +935,8 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
             ))}
           </div>
 
-          {/* CTA Card */}
-          <div style={{ maxWidth: 700, margin: "0 auto", background: `linear-gradient(135deg, ${primary}18, ${secondary}12)`, border: `1px solid ${primary}30`, borderRadius: 20, padding: "40px 36px", textAlign: "center" }}>
-            <h3 style={{ fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 800, color: titleColor, marginBottom: 12 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto", background: `linear-gradient(135deg, ${primary}18, ${secondary}12)`, border: `1px solid ${primary}30`, borderRadius: 20, padding: "40px 36px", textAlign: "center" }}>
+            <h3 style={{ fontSize: "clamp(20px,3vw,28px)", fontWeight: 800, color: titleColor, marginBottom: 12 }}>
               {pc.ctaCardTitle || "Pronto para limpar seu nome?"}
             </h3>
             <p style={{ fontSize: 15, color: subtitleColor, marginBottom: 28, lineHeight: 1.6 }}>
@@ -683,44 +952,39 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
       {/* ── FOOTER ── */}
       <footer style={{ background: footerBg, padding: "48px 24px 32px", borderTop: "1px solid rgba(255,255,255,.06)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 24, justifyContent: "space-between", alignItems: "flex-start", marginBottom: 36 }}>
-            {/* Brand */}
-            <div style={{ flex: "0 0 auto" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 32, justifyContent: "space-between", alignItems: "flex-start", marginBottom: 36 }}>
+            <div style={{ flex: "0 0 auto", maxWidth: 320 }}>
               {campaign.companyLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={campaign.companyLogo} alt={campaign.companyName} style={{ height: (campaign.logoHeight || 40) * 0.8, objectFit: "contain", marginBottom: 12, filter: "brightness(0) invert(1)", opacity: .7 }} />
+                <img src={campaign.companyLogo} alt={campaign.companyName} style={{ height: (campaign.logoHeight || 40) * 0.8, objectFit: "contain", marginBottom: 12, opacity: .7 }} />
               ) : (
                 <span style={{ fontSize: 18, fontWeight: 800, color: "#f8fafc", display: "block", marginBottom: 12 }}>{campaign.companyName}</span>
               )}
-              <p style={{ fontSize: 13, color: footerTextColor, maxWidth: 300, lineHeight: 1.7 }}>
+              <p style={{ fontSize: 13, color: footerTextColor, lineHeight: 1.7 }}>
                 {pc.footerTagline || "Plataforma líder em renegociação de dívidas. Transparência e segurança para você recuperar sua liberdade financeira."}
               </p>
             </div>
 
-            {/* Nav links */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 16 }}>Navegação</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.2)", letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 16 }}>Navegação</div>
               {navLinks.map(l => (
                 <button key={l.id} onClick={() => scrollTo(l.id)}
-                  style={{ display: "block", background: "none", border: "none", cursor: "pointer", color: footerTextColor, fontSize: 14, fontFamily: "inherit", marginBottom: 10, textAlign: "left", transition: "color .2s" }}
-                  onMouseOver={e => (e.currentTarget.style.color = "rgba(255,255,255,.7)")}
-                  onMouseOut={e => (e.currentTarget.style.color = footerTextColor)}>
+                  style={{ display: "block", background: "none", border: "none", cursor: "pointer", color: footerTextColor, fontSize: 14, fontFamily: "inherit", marginBottom: 10, textAlign: "left" }}>
                   {l.label}
                 </button>
               ))}
             </div>
 
-            {/* Social */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 16 }}>Redes sociais</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.2)", letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 16 }}>Redes sociais</div>
               <div style={{ display: "flex", gap: 10 }}>
                 {[
                   { label: "X", href: pc.socialX || "#", icon: "𝕏" },
-                  { label: "LinkedIn", href: pc.socialLinkedin || "#", icon: "in" },
-                  { label: "Facebook", href: pc.socialFacebook || "#", icon: "f" },
+                  { label: "in", href: pc.socialLinkedin || "#", icon: "in" },
+                  { label: "f", href: pc.socialFacebook || "#", icon: "f" },
                 ].map(s => (
                   <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                    style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", color: footerTextColor, fontSize: 14, fontWeight: 700, transition: "background .2s" }}>
+                    style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", color: footerTextColor, fontSize: 13, fontWeight: 700 }}>
                     {s.icon}
                   </a>
                 ))}
@@ -729,9 +993,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
           </div>
 
           <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 24, display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ fontSize: 12, color: footerTextColor }}>
-              © {new Date().getFullYear()} {campaign.companyName}. Todos os direitos reservados.
-            </p>
+            <p style={{ fontSize: 12, color: footerTextColor }}>© {new Date().getFullYear()} {campaign.companyName}. Todos os direitos reservados.</p>
             <p style={{ fontSize: 12, color: footerTextColor, display: "flex", alignItems: "center", gap: 5 }}>
               <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -742,6 +1004,16 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
       </footer>
+
+      {/* ── CHAT WIDGET ── */}
+      <ChatWidget
+        visitorId={visitorId.current}
+        primary={primary}
+        secondary={secondary}
+        companyName={campaign.companyName}
+        companyLogo={campaign.companyLogo}
+        pc={pc}
+      />
     </>
   );
 }

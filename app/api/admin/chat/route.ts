@@ -6,34 +6,36 @@ export async function GET(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
 
-  const raw = await prisma.$queryRaw<{
-    id: number;
-    visitorId: string;
-    name: string | null;
-    cpf: string | null;
-    ip: string | null;
-    city: string | null;
-    state: string | null;
-    consulted: bigint;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-    lastMsg: string | null;
-    lastMsgAt: string | null;
-    unread: bigint;
-  }[]>`
-    SELECT
-      s.id, s.visitorId, s.name, s.cpf, s.ip, s.city, s.state,
-      s.consulted, s.status, s.createdAt, s.updatedAt,
-      (SELECT content FROM ChatMessage WHERE sessionId = s.id ORDER BY id DESC LIMIT 1) AS lastMsg,
-      (SELECT createdAt FROM ChatMessage WHERE sessionId = s.id ORDER BY id DESC LIMIT 1) AS lastMsgAt,
-      (SELECT COUNT(*) FROM ChatMessage WHERE sessionId = s.id AND sender = 'visitor' AND read = 0) AS unread
-    FROM ChatSession s
-    ORDER BY s.updatedAt DESC
-  `;
+  const sessions = await prisma.chatSession.findMany({
+    orderBy: { updatedAt: "desc" },
+    include: {
+      messages: {
+        orderBy: { id: "desc" },
+        take: 1,
+        select: { content: true, createdAt: true },
+      },
+      _count: {
+        select: { messages: { where: { sender: "visitor", read: false } } },
+      },
+    },
+  });
 
-  // BigInt não serializa em JSON — converter para number
-  const sessions = raw.map(s => ({ ...s, consulted: Number(s.consulted), unread: Number(s.unread) }));
+  const result = sessions.map(s => ({
+    id: s.id,
+    visitorId: s.visitorId,
+    name: s.name,
+    cpf: s.cpf,
+    ip: s.ip,
+    city: s.city,
+    state: s.state,
+    consulted: s.consulted,
+    status: s.status,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+    lastMsg: s.messages[0]?.content ?? null,
+    lastMsgAt: s.messages[0]?.createdAt ?? null,
+    unread: s._count.messages,
+  }));
 
-  return NextResponse.json({ sessions });
+  return NextResponse.json({ sessions: result });
 }

@@ -9,35 +9,31 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const sessionId = parseInt(params.id);
 
-  const rawSession = await prisma.$queryRaw<{
-    id: number; visitorId: string; name: string | null; cpf: string | null;
-    ip: string | null; city: string | null; state: string | null;
-    consulted: bigint; status: string; createdAt: string;
-  }[]>`SELECT id, visitorId, name, cpf, ip, city, state, consulted, status, createdAt
-       FROM ChatSession WHERE id = ${sessionId} LIMIT 1`;
+  const session = await prisma.chatSession.findUnique({ where: { id: sessionId } });
+  if (!session) return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
 
-  if (!rawSession.length) return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 });
-  let row = { ...rawSession[0], consulted: Number(rawSession[0].consulted) };
-
-  // Preenche geo em sessões antigas que não tinham esses dados
-  if (!row.city && row.ip) {
-    const geo = await getGeo(row.ip);
-    await prisma.$executeRaw`UPDATE ChatSession SET city=${geo.city}, state=${geo.state}, ip=${geo.resolvedIp}, updatedAt=datetime('now') WHERE id=${sessionId}`;
-    row = { ...row, ip: geo.resolvedIp, city: geo.city, state: geo.state };
+  // Preenche geo em sessões antigas
+  if (!session.city && session.ip) {
+    const geo = await getGeo(session.ip);
+    await prisma.chatSession.update({
+      where: { id: sessionId },
+      data: { city: geo.city, state: geo.state, ip: geo.resolvedIp },
+    });
   }
 
-  const session = [row];
+  const messages = await prisma.chatMessage.findMany({
+    where: { sessionId },
+    orderBy: { id: "asc" },
+    select: { id: true, content: true, sender: true, read: true, createdAt: true },
+  });
 
-  const rawMsgs = await prisma.$queryRaw<{
-    id: number; content: string; sender: string; read: bigint; createdAt: string;
-  }[]>`SELECT id, content, sender, read, createdAt FROM ChatMessage WHERE sessionId = ${sessionId} ORDER BY id ASC`;
+  // Marca mensagens do visitor como lidas
+  await prisma.chatMessage.updateMany({
+    where: { sessionId, sender: "visitor", read: false },
+    data: { read: true },
+  });
 
-  const messages = rawMsgs.map(m => ({ ...m, read: Number(m.read) }));
-
-  // Mark visitor messages as read
-  await prisma.$executeRaw`UPDATE ChatMessage SET read = 1 WHERE sessionId = ${sessionId} AND sender = 'visitor'`;
-
-  return NextResponse.json({ session: session[0], messages });
+  return NextResponse.json({ session, messages });
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -50,17 +46,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const sessionId = parseInt(params.id);
   const content = (body.content as string).trim().slice(0, 1000);
 
-  await prisma.$executeRaw`
-    INSERT INTO ChatMessage (sessionId, content, sender, read, createdAt)
-    VALUES (${sessionId}, ${content}, 'admin', 1, datetime('now'))
-  `;
-  await prisma.$executeRaw`UPDATE ChatSession SET updatedAt = datetime('now') WHERE id = ${sessionId}`;
+  const msg = await prisma.chatMessage.create({
+    data: { sessionId, content, sender: "admin", read: true },
+  });
 
-  const msg = await prisma.$queryRaw<{ id: number; content: string; sender: string; createdAt: string }[]>`
-    SELECT id, content, sender, createdAt FROM ChatMessage WHERE sessionId = ${sessionId} ORDER BY id DESC LIMIT 1
-  `;
+  await prisma.chatSession.update({ where: { id: sessionId }, data: { updatedAt: new Date() } });
 
-  return NextResponse.json(msg[0]);
+  return NextResponse.json({ id: msg.id, content: msg.content, sender: msg.sender, createdAt: msg.createdAt });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -71,7 +63,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const sessionId = parseInt(params.id);
 
   if (body?.status) {
-    await prisma.$executeRaw`UPDATE ChatSession SET status = ${body.status}, updatedAt = datetime('now') WHERE id = ${sessionId}`;
+    await prisma.chatSession.update({ where: { id: sessionId }, data: { status: body.status } });
   }
 
   return NextResponse.json({ ok: true });

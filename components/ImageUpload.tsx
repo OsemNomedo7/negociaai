@@ -18,16 +18,23 @@ export default function ImageUpload({ label, value, onChange, hint, accept = "im
   async function handleFile(file: File) {
     setError("");
     setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "Erro ao fazer upload.");
-    } else {
-      onChange(data.url);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      let data: { url?: string; error?: string } = {};
+      try { data = await res.json(); } catch { /* body não é JSON */ }
+      if (!res.ok) {
+        setError(data.error || `Erro ${res.status} ao fazer upload.`);
+      } else if (data.url) {
+        onChange(data.url);
+      }
+    } catch (err) {
+      setError("Erro de conexão ao fazer upload.");
+      console.error("Upload error:", err);
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   }
 
   function handleDrop(e: React.DragEvent) {

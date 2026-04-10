@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminFromRequest } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import { existsSync } from "fs";
-import path from "path";
+import { put } from "@vercel/blob";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -33,25 +31,18 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 8);
-    const filename = `${timestamp}-${random}.${ext}`;
-    const filepath = path.join(uploadsDir, filename);
+    const filename = `uploads/${timestamp}-${random}.${ext}`;
 
-    const bytes = await file.arrayBuffer();
-    await writeFile(filepath, Buffer.from(bytes));
+    const blob = await put(filename, file, { access: "public" });
 
-    return NextResponse.json({ url: `/uploads/${filename}` });
+    return NextResponse.json({ url: blob.url });
   } catch (err) {
-    console.error("Upload write error:", err);
+    console.error("Upload error:", err);
     return NextResponse.json(
-      { error: "Erro ao salvar arquivo no servidor. Em produção (Vercel), use uma URL externa de imagem." },
+      { error: "Erro ao fazer upload. Verifique se o Vercel Blob está configurado no projeto." },
       { status: 500 }
     );
   }

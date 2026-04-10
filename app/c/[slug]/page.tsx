@@ -745,7 +745,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
                 <div style={{ marginBottom: 20, padding: "12px 16px", borderRadius: 10, background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.25)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#f87171" }}>Dívida ativa localizada em seu nome</div>
-                    <div style={{ fontSize: 12, color: `${cardTextColor}73`, marginTop: 2 }}>Esta oferta é exclusiva e expira em: <Countdown /></div>
+                    <div style={{ fontSize: 12, color: cardTextColor, marginTop: 2 }}>Esta oferta é exclusiva e expira em: <Countdown /></div>
                   </div>
                   <span style={{ padding: "4px 10px", borderRadius: 6, background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em" }}>URGENTE</span>
                 </div>
@@ -754,7 +754,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
                 <div className="result-cols" style={{ display: "flex", gap: 16, marginBottom: 20 }}>
                   {/* Dados da Dívida */}
                   <div style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: `${cardTextColor}b3`, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: cardTextColor, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
                       <span>📋</span> Dados da Dívida
                     </div>
                     {[
@@ -763,8 +763,8 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
                       { label: "Descrição", value: result.description },
                       { label: "Status", value: result.status, badge: true },
                     ].map(row => (
-                      <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${cardTextColor}0a` }}>
-                        <span style={{ fontSize: 12, color: `${cardTextColor}66` }}>{row.label}</span>
+                      <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${cardTextColor}22` }}>
+                        <span style={{ fontSize: 12, color: cardTextColor }}>{row.label}</span>
                         {row.badge ? (
                           <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "rgba(239,68,68,.15)", color: "#f87171", border: "1px solid rgba(239,68,68,.3)" }}>{row.value}</span>
                         ) : (
@@ -776,15 +776,15 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
 
                   {/* Análise de Crédito */}
                   <div style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: `${cardTextColor}b3`, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: cardTextColor, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
                       <span>📊</span> Análise de Crédito
                     </div>
                     <CircularScore score={result.score} colorBad={scoreColorBad} colorMid={scoreColorMid} colorGood={scoreColorGood} />
                     <div style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "rgba(34,197,94,.06)", border: "1px solid rgba(34,197,94,.18)", textAlign: "center" }}>
-                      <div style={{ fontSize: 11, color: `${cardTextColor}66`, marginBottom: 4 }}>Após regularizar:</div>
+                      <div style={{ fontSize: 11, color: cardTextColor, marginBottom: 4 }}>Após regularizar:</div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: "#4ade80" }}>{result.scoreAfterPay} <span style={{ fontSize: 11, fontWeight: 400 }}>/1000 pontos</span></div>
                       <div style={{ fontSize: 11, color: "#86efac", marginTop: 4 }}>+{result.scoreAfterPay - result.score} pts</div>
-                      <div style={{ fontSize: 11, color: `${cardTextColor}4d`, marginTop: 6 }}>Acesso a crédito, melhores taxas e oportunidades</div>
+                      <div style={{ fontSize: 11, color: cardTextColor, marginTop: 6 }}>Acesso a crédito, melhores taxas e oportunidades</div>
                     </div>
                   </div>
                 </div>
@@ -793,14 +793,14 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
                 <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 16, padding: "24px", marginBottom: 16 }}>
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontSize: 16, fontWeight: 800, color: cardTextColor, marginBottom: 4 }}>🎯 Oferta Especial de Quitação</div>
-                    <div style={{ fontSize: 13, color: `${cardTextColor}66` }}>Pague agora e elimine sua dívida definitivamente</div>
+                    <div style={{ fontSize: 13, color: cardTextColor }}>Pague agora e elimine sua dívida definitivamente</div>
                   </div>
 
                   <div className="offer-cols" style={{ display: "flex", gap: 20, marginBottom: 20 }}>
                     {/* Preços */}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, color: `${cardTextColor}59`, textDecoration: "line-through" }}>{fmtBRL(result.amount)}</div>
-                      <div style={{ fontSize: 11, color: `${cardTextColor}40`, marginBottom: 8 }}>Valor cheio</div>
+                      <div style={{ fontSize: 13, color: cardTextColor, textDecoration: "line-through" }}>{fmtBRL(result.amount)}</div>
+                      <div style={{ fontSize: 11, color: cardTextColor, marginBottom: 8 }}>Valor cheio</div>
                       <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, background: `${scoreColorGood}22`, border: `1px solid ${scoreColorGood}44`, fontSize: 12, fontWeight: 800, color: scoreColorGood, marginBottom: 8 }}>
                         -{result.discount}% OFF
                       </div>
@@ -810,10 +810,10 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
 
                     {/* Benefícios */}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: `${cardTextColor}80`, marginBottom: 10 }}>O que você ganha:</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: cardTextColor, marginBottom: 10 }}>O que você ganha:</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                         {offerBenefits.map((b, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: `${cardTextColor}b3` }}>
+                          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: cardTextColor }}>
                             <span style={{ color: scoreColorGood, fontWeight: 700, flexShrink: 0 }}>✓</span>
                             {b}
                           </div>
@@ -829,7 +829,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
                   {/* Trust badges */}
                   <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "6px 20px", marginTop: 14 }}>
                     {["🔒 Pagamento seguro", "⚡ PIX Instantâneo", "📄 Comprovante digital"].map(b => (
-                      <span key={b} style={{ fontSize: 11, color: `${cardTextColor}4d` }}>{b}</span>
+                      <span key={b} style={{ fontSize: 11, color: cardTextColor }}>{b}</span>
                     ))}
                   </div>
                 </div>
@@ -845,13 +845,13 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
                 )}
 
                 {/* Social proof */}
-                <p style={{ textAlign: "center", fontSize: 12, color: `${cardTextColor}40`, marginTop: 16, lineHeight: 1.6 }}>
+                <p style={{ textAlign: "center", fontSize: 12, color: cardTextColor, marginTop: 16, lineHeight: 1.6 }}>
                   Milhares de brasileiros regularizaram suas dívidas e hoje têm acesso a crédito, financiamentos e novas oportunidades.
                   Não deixe uma dívida antiga bloquear o seu futuro. Este é o seu momento.
                 </p>
 
                 <button onClick={() => { setResult(null); setCpf(""); setName(""); trackedCheckout.current = false; }}
-                  style={{ marginTop: 14, display: "block", width: "100%", background: "none", border: "none", cursor: "pointer", color: `${cardTextColor}4d`, fontSize: 13, fontFamily: "inherit", textDecoration: "underline" }}>
+                  style={{ marginTop: 14, display: "block", width: "100%", background: "none", border: "none", cursor: "pointer", color: cardTextColor, fontSize: 13, fontFamily: "inherit", textDecoration: "underline" }}>
                   Nova consulta
                 </button>
               </div>

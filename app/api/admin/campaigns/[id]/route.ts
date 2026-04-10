@@ -70,16 +70,24 @@ export async function PUT(
     body.colorScheme = JSON.stringify(body.colorScheme);
   }
 
-  // Strip readonly fields
-  const { id: _id, createdAt: _c, ...updateData } = body;
+  // Strip readonly/computed fields that aren't Campaign columns
+  const {
+    id: _id, createdAt: _c, updatedAt: _u,
+    _count: _cnt, stats: _st, debtors: _dbt, logs: _lg,
+    ...updateData
+  } = body;
 
-  const campaign = await prisma.campaign.update({
-    where: { id },
-    data: updateData,
-  });
-
-  const { webhookSecret: _secret, ...publicData } = campaign;
-  return NextResponse.json(publicData);
+  try {
+    const campaign = await prisma.campaign.update({
+      where: { id },
+      data: updateData,
+    });
+    const { webhookSecret: _secret, ...publicData } = campaign;
+    return NextResponse.json(publicData);
+  } catch (err) {
+    console.error("Campaign update error:", err);
+    return NextResponse.json({ error: "Erro ao salvar campanha." }, { status: 500 });
+  }
 }
 
 export async function DELETE(

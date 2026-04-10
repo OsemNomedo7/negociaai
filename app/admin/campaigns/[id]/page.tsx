@@ -189,6 +189,7 @@ export default function CampaignEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("campanha");
 
   useEffect(() => {
@@ -211,18 +212,31 @@ export default function CampaignEditorPage() {
 
   async function handleSave() {
     setSaving(true);
-    const res = await fetch(`/api/admin/campaigns/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...settings,
-        bannerImages: settings.bannerImages,
-        pageContent: JSON.stringify(pageContent),
-        colorScheme: JSON.stringify(colorScheme),
-      }),
-    });
-    if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
-    setSaving(false);
+    setSaveError("");
+    try {
+      const res = await fetch(`/api/admin/campaigns/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...settings,
+          bannerImages: settings.bannerImages,
+          pageContent: JSON.stringify(pageContent),
+          colorScheme: JSON.stringify(colorScheme),
+        }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        let msg = "Erro ao salvar.";
+        try { const d = await res.json(); if (d.error) msg = d.error; } catch { /* noop */ }
+        setSaveError(msg);
+      }
+    } catch {
+      setSaveError("Erro de conexão ao salvar.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function updS<K extends keyof CampaignSettings>(k: K, v: CampaignSettings[K]) { setSettings(s => ({ ...s, [k]: v })); }
@@ -268,6 +282,12 @@ export default function CampaignEditorPage() {
           ) : saved ? "✅ Salvo!" : "💾 Salvar alterações"}
         </button>
       </div>
+
+      {saveError && (
+        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
+          ⚠️ {saveError}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1.5 flex-wrap">

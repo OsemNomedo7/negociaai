@@ -743,6 +743,8 @@ export default function CampaignsPage() {
 
   const [copied, setCopied] = useState<number | null>(null);
   const [origin, setOrigin] = useState("");
+  const [deleteCampaignTarget, setDeleteCampaignTarget] = useState<Campaign | null>(null);
+  const [deletingCampaign, setDeletingCampaign] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -780,9 +782,12 @@ export default function CampaignsPage() {
     load();
   }
 
-  async function deleteCampaign(c: Campaign) {
-    if (!confirm(`Desativar campanha "${c.name}"? (soft delete)`)) return;
-    await fetch(`/api/admin/campaigns/${c.id}`, { method: "DELETE" });
+  async function confirmDeleteCampaign() {
+    if (!deleteCampaignTarget) return;
+    setDeletingCampaign(true);
+    await fetch(`/api/admin/campaigns/${deleteCampaignTarget.id}`, { method: "DELETE" });
+    setDeletingCampaign(false);
+    setDeleteCampaignTarget(null);
     load();
   }
 
@@ -1000,7 +1005,7 @@ export default function CampaignsPage() {
                       )}
                       {c.active ? "Pausar" : "Ativar"}
                     </ActionBtn>
-                    <ActionBtn onClick={() => deleteCampaign(c)} title="Deletar" variant="danger">
+                    <ActionBtn onClick={() => setDeleteCampaignTarget(c)} title="Deletar" variant="danger">
                       <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                         <polyline points="3 6 5 6 21 6" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" />
@@ -1014,6 +1019,26 @@ export default function CampaignsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal confirmar exclusão de campanha */}
+      {deleteCampaignTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+          <div style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "28px 32px", maxWidth: 400, width: "90%" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f8fafc", marginBottom: 8 }}>Excluir campanha?</h3>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,.55)", marginBottom: 24, lineHeight: 1.6 }}>
+              A campanha <strong style={{ color: "#f8fafc" }}>{deleteCampaignTarget.name}</strong> será desativada. Esta ação pode ser revertida reativando a campanha.
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setDeleteCampaignTarget(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.7)", fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button onClick={confirmDeleteCampaign} disabled={deletingCampaign} style={{ padding: "9px 20px", borderRadius: 9, background: "#ef4444", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                {deletingCampaign ? "Excluindo..." : "Sim, excluir"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

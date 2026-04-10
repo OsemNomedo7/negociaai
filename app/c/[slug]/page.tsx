@@ -559,8 +559,8 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
           .result-cols { flex-direction:column !important; }
           .offer-cols { flex-direction:column !important; }
           .feat-grid { grid-template-columns:1fr !important; }
-          .about-stats { grid-template-columns:repeat(2,1fr) !important; }
-          .contact-grid { grid-template-columns:1fr !important; }
+          .about-intro { grid-template-columns:1fr !important; gap:40px !important; }
+          .contact-layout { grid-template-columns:1fr !important; gap:48px !important; }
           .nav-desktop { display:none !important; }
           .menu-btn { display:flex !important; }
         }
@@ -869,37 +869,61 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
       )}
 
       {/* ── QUEM SOMOS ── */}
-      <section id="quem-somos" style={{ background: aboutBg, padding: "80px 24px" }}>
+      <section id="quem-somos" style={{ background: aboutBg, padding: "96px 24px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: 99, background: `${primary}12`, border: `1px solid ${primary}28`, fontSize: 12, fontWeight: 700, color: primary, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 16 }}>
-              {pc.aboutTag || "Nossa empresa"}
-            </span>
-            <h2 style={{ fontSize: "clamp(24px,3.5vw,40px)", fontWeight: 800, color: titleColor, marginBottom: 16 }}>
-              {pc.aboutTitle || "Quem somos"}
-            </h2>
-            <p style={{ fontSize: 16, color: subtitleColor, maxWidth: 600, margin: "0 auto", lineHeight: 1.7 }}>
-              {pc.aboutSubtitle || "Somos uma plataforma de renegociação de dívidas que conecta pessoas às melhores propostas de quitação."}
-            </p>
+
+          {/* Intro: texto + stats lado a lado */}
+          <div className="about-intro" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center", marginBottom: 80 }}>
+            <div>
+              <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 4, background: `${primary}15`, fontSize: 11, fontWeight: 700, color: primary, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 20 }}>
+                {pc.aboutTag || "Nossa empresa"}
+              </span>
+              <h2 style={{ fontSize: "clamp(28px,3.5vw,44px)", fontWeight: 800, color: titleColor, lineHeight: 1.2, marginBottom: 20 }}>
+                {pc.aboutTitle || "Especialistas em renegociação de dívidas"}
+              </h2>
+              <p style={{ fontSize: 16, color: subtitleColor, lineHeight: 1.8, marginBottom: 32 }}>
+                {pc.aboutSubtitle || "Somos uma plataforma de renegociação de dívidas que conecta pessoas às melhores propostas de quitação com segurança e transparência."}
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 2, background: grad, borderRadius: 2 }} />
+                <span style={{ fontSize: 13, color: subtitleColor, fontWeight: 500 }}>Regulamentada e certificada</span>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: cardBorder, border: `1px solid ${cardBorder}`, borderRadius: 16, overflow: "hidden" }}>
+              {aboutStats.map((s, i) => (
+                <div key={i} style={{ background: cardBg, padding: "32px 28px" }}>
+                  <div style={{ fontSize: "clamp(24px,2.5vw,34px)", fontWeight: 900, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6, lineHeight: 1 }}>{s.val}</div>
+                  <div style={{ fontSize: 13, color: subtitleColor, lineHeight: 1.4 }}>{s.lbl}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="about-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 56 }}>
-            {aboutStats.map((s, i) => (
-              <div key={i} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: "28px 20px", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <div style={{ fontSize: "clamp(20px,3vw,30px)", fontWeight: 900, background: grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>{s.val}</div>
-                <div style={{ fontSize: 13, color: subtitleColor }}>{s.lbl}</div>
-              </div>
-            ))}
+          {/* Diferenciais */}
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: subtitleColor, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 32 }}>Por que escolher a {campaign.companyName || "nossa plataforma"}</p>
           </div>
-
-          <div className="feat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-            {features.map((f, i) => (
-              <div key={i} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: "28px 24px", boxShadow: "0 2px 12px rgba(0,0,0,.05)" }}>
-                <div style={{ fontSize: 32, marginBottom: 14 }}>{f.icon}</div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: titleColor, marginBottom: 8 }}>{f.title}</h3>
-                <p style={{ fontSize: 14, color: subtitleColor, lineHeight: 1.6 }}>{f.desc}</p>
-              </div>
-            ))}
+          <div className="feat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 0, border: `1px solid ${cardBorder}`, borderRadius: 16, overflow: "hidden" }}>
+            {features.map((f, i) => {
+              const featIcons = [
+                <svg key={0} width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>,
+                <svg key={1} width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>,
+                <svg key={2} width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>,
+                <svg key={3} width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/></svg>,
+                <svg key={4} width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185z"/></svg>,
+                <svg key={5} width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg>,
+              ];
+              return (
+                <div key={i} style={{ background: cardBg, padding: "32px 28px", borderRight: i % 3 !== 2 ? `1px solid ${cardBorder}` : "none", borderBottom: i < 3 ? `1px solid ${cardBorder}` : "none" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: `${primary}10`, display: "flex", alignItems: "center", justifyContent: "center", color: primary, marginBottom: 20 }}>
+                    {featIcons[i]}
+                  </div>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: titleColor, marginBottom: 8 }}>{f.title}</h3>
+                  <p style={{ fontSize: 13, color: subtitleColor, lineHeight: 1.7 }}>{f.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -913,42 +937,81 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
       )}
 
       {/* ── CONTATO ── */}
-      <section id="fale-conosco" style={{ background: contactBg, padding: "80px 24px" }}>
+      <section id="fale-conosco" style={{ background: contactBg, padding: "96px 24px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: 99, background: `${primary}12`, border: `1px solid ${primary}28`, fontSize: 12, fontWeight: 700, color: primary, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 16 }}>
-              {pc.contactTag || "Atendimento"}
-            </span>
-            <h2 style={{ fontSize: "clamp(24px,3.5vw,40px)", fontWeight: 800, color: titleColor, marginBottom: 12 }}>
-              {pc.contactTitle || "Fale conosco"}
-            </h2>
-            <p style={{ fontSize: 15, color: subtitleColor, maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>
-              {pc.contactSubtitle || "Nossa equipe está pronta para te ajudar. Escolha o canal de sua preferência."}
-            </p>
-          </div>
+          <div className="contact-layout" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
 
-          <div className="contact-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16, maxWidth: 800, margin: "0 auto 48px" }}>
-            {contactCards.map((c, i) => (
-              <div key={i} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: "24px", display: "flex", gap: 16, alignItems: "flex-start", boxShadow: "0 2px 12px rgba(0,0,0,.05)" }}>
-                <div style={{ fontSize: 28, flexShrink: 0 }}>{c.icon}</div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: titleColor, marginBottom: 4 }}>{c.title}</div>
-                  <div style={{ fontSize: 13, color: subtitleColor }}>{c.sub}</div>
+            {/* Lado esquerdo: info */}
+            <div>
+              <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 4, background: `${primary}15`, fontSize: 11, fontWeight: 700, color: primary, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 20 }}>
+                {pc.contactTag || "Atendimento"}
+              </span>
+              <h2 style={{ fontSize: "clamp(28px,3vw,42px)", fontWeight: 800, color: titleColor, lineHeight: 1.2, marginBottom: 16 }}>
+                {pc.contactTitle || "Fale conosco"}
+              </h2>
+              <p style={{ fontSize: 15, color: subtitleColor, lineHeight: 1.8, marginBottom: 48 }}>
+                {pc.contactSubtitle || "Nossa equipe está pronta para te ajudar. Escolha o canal de sua preferência."}
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                {[
+                  { label: "Telefone", value: pc.contactPhone || "(11) 91234-5678", sub: pc.contactPhoneSub || "Seg–Sex, 8h às 20h",
+                    icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.338c0 9.037 7.376 16.462 16.413 16.462h1.175a2.25 2.25 0 002.25-2.25v-1.372a1.25 1.25 0 00-.774-1.183l-3.43-1.543a1.25 1.25 0 00-1.478.31l-1.197 1.44a.75.75 0 01-.884.214 13.088 13.088 0 01-6.485-6.486.75.75 0 01.214-.884l1.44-1.197a1.25 1.25 0 00.31-1.478L8.258 5.297A1.25 1.25 0 007.075 4.5H5.7a3.45 3.45 0 00-3.45 3.45v.388z"/></svg> },
+                  { label: "E-mail", value: pc.contactEmail || "suporte@negociai.com.br", sub: pc.contactEmailSub || "Resposta em até 2h úteis",
+                    icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg> },
+                  { label: "Endereço", value: pc.contactAddress || "Av. Paulista, 1000 — SP", sub: pc.contactAddressSub || "CEP 01310-100",
+                    icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg> },
+                  { label: "Horário", value: pc.contactHours || "Segunda à Sexta, 8h às 20h", sub: pc.contactHoursSub || "Sábados, 9h às 14h",
+                    icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: 20, alignItems: "flex-start", padding: "20px 0", borderBottom: i < 3 ? `1px solid ${cardBorder}` : "none" }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: `${primary}10`, display: "flex", alignItems: "center", justifyContent: "center", color: primary, flexShrink: 0, marginTop: 2 }}>
+                      {item.icon}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: subtitleColor, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>{item.label}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: titleColor, marginBottom: 2 }}>{item.value}</div>
+                      <div style={{ fontSize: 13, color: subtitleColor }}>{item.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Lado direito: CTA card */}
+            <div style={{ position: "sticky", top: 24 }}>
+              <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, overflow: "hidden" }}>
+                <div style={{ background: grad, padding: "32px 32px 28px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.7)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 12 }}>Oferta exclusiva</div>
+                  <h3 style={{ fontSize: "clamp(20px,2.5vw,26px)", fontWeight: 800, color: "#fff", lineHeight: 1.3, marginBottom: 8 }}>
+                    {pc.ctaCardTitle || "Pronto para limpar seu nome?"}
+                  </h3>
+                  <p style={{ fontSize: 14, color: "rgba(255,255,255,.8)", lineHeight: 1.6 }}>
+                    {pc.ctaCardDesc || "Consulte sua situação gratuitamente e descubra o desconto que preparamos para você."}
+                  </p>
+                </div>
+                <div style={{ padding: "28px 32px 32px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+                    {["Consulta 100% gratuita e sem compromisso", "Resultado imediato — sem cadastro", "Desconto exclusivo para pagamento via PIX"].map((item, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: subtitleColor }}>
+                        <div style={{ width: 20, height: 20, borderRadius: "50%", background: `${primary}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="11" height="11" fill="none" stroke={primary} strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                        </div>
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => scrollTo("consultar")} style={{ width: "100%", background: grad, border: "none", borderRadius: 12, padding: "15px", color: "#fff", fontSize: 15, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", letterSpacing: ".02em" }}>
+                    {pc.ctaCardBtn || "Consultar dívida grátis"}
+                  </button>
+                  <p style={{ fontSize: 12, color: subtitleColor, textAlign: "center", marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    Seus dados estão protegidos
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div style={{ maxWidth: 680, margin: "0 auto", background: `linear-gradient(135deg, ${primary}18, ${secondary}12)`, border: `1px solid ${primary}30`, borderRadius: 20, padding: "40px 36px", textAlign: "center" }}>
-            <h3 style={{ fontSize: "clamp(20px,3vw,28px)", fontWeight: 800, color: titleColor, marginBottom: 12 }}>
-              {pc.ctaCardTitle || "Pronto para limpar seu nome?"}
-            </h3>
-            <p style={{ fontSize: 15, color: subtitleColor, marginBottom: 28, lineHeight: 1.6 }}>
-              {pc.ctaCardDesc || "Consulte sua situação gratuitamente e descubra o desconto que preparamos para você."}
-            </p>
-            <button onClick={() => scrollTo("consultar")} style={{ background: grad, border: "none", borderRadius: 12, padding: "15px 36px", color: "#fff", fontSize: 15, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
-              {pc.ctaCardBtn || "Consultar dívida grátis"}
-            </button>
           </div>
         </div>
       </section>

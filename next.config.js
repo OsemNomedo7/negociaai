@@ -5,6 +5,9 @@ const nextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
+  experimental: {
+    serverComponentsExternalPackages: ["@vercel/blob"],
+  },
 };
 
 module.exports = nextConfig;

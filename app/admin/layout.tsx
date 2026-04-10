@@ -180,7 +180,7 @@ function AdminInner({ children }: { children: React.ReactNode }) {
           <div className="adm-logo">
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <img
-                src="/logo/logo.png"
+                src="/logo.png"
                 alt="CAOS DÍVIDAS"
                 style={{
                   height: 36, width: "auto", objectFit: "contain",

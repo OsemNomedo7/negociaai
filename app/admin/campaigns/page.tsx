@@ -785,7 +785,7 @@ export default function CampaignsPage() {
   async function confirmDeleteCampaign() {
     if (!deleteCampaignTarget) return;
     setDeletingCampaign(true);
-    await fetch(`/api/admin/campaigns/${deleteCampaignTarget.id}`, { method: "DELETE" });
+    await fetch(`/api/admin/campaigns/${deleteCampaignTarget.id}?hard=1`, { method: "DELETE" });
     setDeletingCampaign(false);
     setDeleteCampaignTarget(null);
     load();
@@ -1026,7 +1026,7 @@ export default function CampaignsPage() {
           <div style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: "28px 32px", maxWidth: 400, width: "90%" }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f8fafc", marginBottom: 8 }}>Excluir campanha?</h3>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,.55)", marginBottom: 24, lineHeight: 1.6 }}>
-              A campanha <strong style={{ color: "#f8fafc" }}>{deleteCampaignTarget.name}</strong> será desativada. Esta ação pode ser revertida reativando a campanha.
+              A campanha <strong style={{ color: "#f8fafc" }}>{deleteCampaignTarget.name}</strong> será excluída permanentemente junto com todos os seus dados. Esta ação não pode ser desfeita.
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button onClick={() => setDeleteCampaignTarget(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", color: "rgba(255,255,255,.7)", fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>

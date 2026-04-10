@@ -719,7 +719,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
           </div>
 
           {/* Form card */}
-          <div className="hero-card" style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,.08)", borderRadius: 20, padding: "36px 32px" }}>
+          <div className="hero-card" style={{ background: cs.cardBg || "#0F172A", border: `1px solid ${cs.cardBorder || "rgba(255,255,255,.08)"}`, borderRadius: 20, padding: "36px 32px" }}>
             {!result ? (
               <form onSubmit={handleConsult} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div>

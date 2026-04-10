@@ -60,7 +60,7 @@ interface ColorScheme {
   consultBg?: string; aboutBg?: string; contactBg?: string;
   footerBg?: string; footerTextColor?: string;
   titleColor?: string; subtitleColor?: string;
-  cardBg?: string; cardBorder?: string;
+  cardBg?: string; cardBorder?: string; cardTextColor?: string;
   scoreColorBad?: string; scoreColorMid?: string; scoreColorGood?: string;
 }
 interface DebtResult {
@@ -451,8 +451,9 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
   const footerTextColor = cs.footerTextColor || "rgba(255,255,255,.35)";
   const titleColor   = cs.titleColor   || "#0F172A";
   const subtitleColor = cs.subtitleColor || "#64748b";
-  const cardBg       = cs.cardBg       || "#ffffff";
-  const cardBorder   = cs.cardBorder   || "#E8EEF8";
+  const cardBg          = cs.cardBg          || "#ffffff";
+  const cardBorder      = cs.cardBorder      || "#E8EEF8";
+  const cardTextColor   = cs.cardTextColor   || "#f8fafc";
   const scoreColorBad  = cs.scoreColorBad  || "#ef4444";
   const scoreColorMid  = cs.scoreColorMid  || "#f59e0b";
   const scoreColorGood = cs.scoreColorGood || "#22c55e";
@@ -533,11 +534,11 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
         .cp-input {
           width: 100%; padding: 14px 18px;
           background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.13);
-          border-radius: 12px; color: #f8fafc; font-size: 15px; font-family: inherit;
+          border-radius: 12px; color: ${cardTextColor}; font-size: 15px; font-family: inherit;
           outline: none; transition: border-color .2s, box-shadow .2s;
         }
         .cp-input:focus { border-color: ${primary}; box-shadow: 0 0 0 3px ${primary}22; }
-        .cp-input::placeholder { color: rgba(255,255,255,.25); }
+        .cp-input::placeholder { color: ${cardTextColor}44; }
         .cp-btn {
           width: 100%; padding: 15px; background: ${grad};
           border: none; border-radius: 12px; color: #fff;
@@ -723,11 +724,11 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
             {!result ? (
               <form onSubmit={handleConsult} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,.45)", marginBottom: 8, letterSpacing: ".06em", textTransform: "uppercase" }}>Nome completo</label>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: `${cardTextColor}99`, marginBottom: 8, letterSpacing: ".06em", textTransform: "uppercase" }}>Nome completo</label>
                   <input className="cp-input" type="text" placeholder="Digite seu nome completo" value={name} onChange={e => setName(e.target.value)} required minLength={3} />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,.45)", marginBottom: 8, letterSpacing: ".06em", textTransform: "uppercase" }}>CPF</label>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: `${cardTextColor}99`, marginBottom: 8, letterSpacing: ".06em", textTransform: "uppercase" }}>CPF</label>
                   <input className="cp-input" type="text" inputMode="numeric" placeholder="000.000.000-00" value={cpf} onChange={handleCPFChange} required maxLength={14} />
                 </div>
                 {error && (
@@ -736,7 +737,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
                 <button className="cp-btn" type="submit" disabled={consulting}>
                   {consulting ? "Consultando..." : (pc.consultCta || "Consultar minha situação")}
                 </button>
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,.25)", textAlign: "center" }}>🔒 {pc.consultPrivacy || "Consulta 100% gratuita e segura · Sem cadastro"}</p>
+                <p style={{ fontSize: 11, color: `${cardTextColor}55`, textAlign: "center" }}>🔒 {pc.consultPrivacy || "Consulta 100% gratuita e segura · Sem cadastro"}</p>
               </form>
             ) : (
               <div className="fade-up">

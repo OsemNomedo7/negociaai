@@ -65,7 +65,7 @@ interface ColorScheme {
   consultBg: string; aboutBg: string; contactBg: string; footerBg: string;
   footerTextColor: string;
   titleColor: string; subtitleColor: string;
-  cardBg: string; cardBorder: string;
+  cardBg: string; cardBorder: string; cardTextColor: string;
   inputBorder: string; inputFocusBorder: string;
   scoreColorBad: string; scoreColorMid: string; scoreColorGood: string;
 }
@@ -146,7 +146,7 @@ const DEFAULT_COLORS: ColorScheme = {
   consultBg: "#F0F4F8", aboutBg: "#ffffff", contactBg: "#F0F4F8", footerBg: "#060A14",
   footerTextColor: "rgba(255,255,255,.35)",
   titleColor: "#0F172A", subtitleColor: "#64748b",
-  cardBg: "#ffffff", cardBorder: "#E8EEF8",
+  cardBg: "#ffffff", cardBorder: "#E8EEF8", cardTextColor: "#f8fafc",
   inputBorder: "#E2E8F0", inputFocusBorder: "#6366f1",
   scoreColorBad: "#ef4444", scoreColorMid: "#f59e0b", scoreColorGood: "#22c55e",
 };
@@ -460,6 +460,7 @@ export default function CampaignEditorPage() {
                 <CP label="Subtítulos / corpo" value={colorScheme.subtitleColor} onChange={v => updCS("subtitleColor", v)} />
                 <CP label="Fundo dos cards" value={colorScheme.cardBg} onChange={v => updCS("cardBg", v)} />
                 <CP label="Borda dos cards" value={colorScheme.cardBorder} onChange={v => updCS("cardBorder", v)} />
+                <CP label="Texto do card de consulta" value={colorScheme.cardTextColor} onChange={v => updCS("cardTextColor", v)} />
                 <CP label="Borda dos inputs" value={colorScheme.inputBorder} onChange={v => updCS("inputBorder", v)} />
                 <CP label="Borda input (foco)" value={colorScheme.inputFocusBorder} onChange={v => updCS("inputFocusBorder", v)} />
               </div>

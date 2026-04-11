@@ -21,8 +21,8 @@ export async function POST(
   if (!name || !cpf || !amount || amount <= 0)
     return NextResponse.json({ error: "Nome, CPF e valor são obrigatórios." }, { status: 400 });
 
-  const MAX_SIGILO = 99900; // R$ 999,00 — abaixo do limite da SigiloPay (R$ 1.000,00)
-  const priceInCents = Math.min(Math.round(amount * 100), MAX_SIGILO);
+  // SigiloPay espera valor em reais (float), não centavos. Máximo R$ 999,00.
+  const price = Math.min(Math.round(amount * 100) / 100, 999);
 
   const payload = {
     product: {
@@ -30,7 +30,7 @@ export async function POST(
       externalId: `${campaign.slug}-${cpf.replace(/\D/g, "")}`,
       offer: {
         name: `Negociação — ${campaign.name}`,
-        price: priceInCents,
+        price,
         offerType: "NATIONAL",
         currency: "BRL",
         lang: "pt-BR",
@@ -68,7 +68,7 @@ export async function POST(
       error: "Erro ao gerar link de pagamento.",
       status: sigiloRes.status,
       detail: sigiloData,
-      debug: { amountRecebido: amount, priceInCents },
+      debug: { amountRecebido: amount, priceEnviado: price },
     }, { status: 502 });
   }
 

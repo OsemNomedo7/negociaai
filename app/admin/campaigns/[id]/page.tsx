@@ -191,6 +191,11 @@ export default function CampaignEditorPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("campanha");
+  const [domainStatus, setDomainStatus] = useState<{
+    registered: boolean; verified: boolean; dnsConfigured: boolean; sslReady: boolean; active: boolean;
+  } | null>(null);
+  const [domainChecking, setDomainChecking] = useState(false);
+  const [domainRegistering, setDomainRegistering] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/campaigns/${id}`)
@@ -227,6 +232,7 @@ export default function CampaignEditorPage() {
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+        if (settings.customDomain) registerDomain(settings.customDomain);
       } else {
         let msg = "Erro ao salvar.";
         try { const d = await res.json(); if (d.error) msg = d.error; } catch { /* noop */ }
@@ -236,6 +242,29 @@ export default function CampaignEditorPage() {
       setSaveError("Erro de conexão ao salvar.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function registerDomain(domain: string) {
+    setDomainRegistering(true);
+    await fetch("/api/admin/domain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain }),
+    });
+    setDomainRegistering(false);
+    checkDomainStatus(domain);
+  }
+
+  async function checkDomainStatus(domain: string) {
+    if (!domain) return;
+    setDomainChecking(true);
+    try {
+      const res = await fetch(`/api/admin/domain?domain=${encodeURIComponent(domain)}`);
+      const data = await res.json();
+      setDomainStatus(data);
+    } finally {
+      setDomainChecking(false);
     }
   }
 
@@ -344,30 +373,79 @@ export default function CampaignEditorPage() {
           </div>
 
           <div>
-            <Field label="Domínio customizado (opcional)" value={settings.customDomain} onChange={v => updS("customDomain", v)}
+            <Field label="Domínio customizado (opcional)" value={settings.customDomain} onChange={v => { updS("customDomain", v); setDomainStatus(null); }}
               placeholder="pague.suaempresa.com.br"
               hint="Deixe em branco para usar apenas a URL gerada acima." />
             {settings.customDomain && (
-              <div className="mt-3 p-4 rounded-xl text-sm space-y-2"
-                style={{ background: "rgba(59,130,246,.06)", border: "1px solid rgba(59,130,246,.2)" }}>
-                <p className="font-semibold" style={{ color: "#60a5fa" }}>Instruções DNS</p>
-                <p style={{ color: "var(--text-muted)" }}>
-                  No painel do seu provedor de DNS, aponte{" "}
-                  <code className="px-1.5 py-0.5 rounded text-xs font-mono" style={{ background: "rgba(255,255,255,.08)" }}>{settings.customDomain}</code>{" "}
-                  para este servidor:
-                </p>
-                <div className="flex flex-col gap-1.5 font-mono text-xs" style={{ color: "var(--text)" }}>
-                  <div className="p-2 rounded" style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)" }}>
-                    CNAME @ cname.vercel-dns.com
+              <div className="mt-3 rounded-xl text-sm overflow-hidden"
+                style={{ border: "1px solid rgba(99,102,241,.25)" }}>
+
+                {/* Instruções DNS */}
+                <div className="p-4 space-y-2" style={{ background: "rgba(99,102,241,.06)" }}>
+                  <p className="font-semibold" style={{ color: "#818cf8" }}>Instruções DNS</p>
+                  <p style={{ color: "var(--text-muted)" }}>
+                    No painel do seu provedor de DNS, aponte{" "}
+                    <code className="px-1.5 py-0.5 rounded text-xs font-mono" style={{ background: "rgba(255,255,255,.08)" }}>{settings.customDomain}</code>{" "}
+                    para:
+                  </p>
+                  <div className="flex flex-col gap-1.5 font-mono text-xs" style={{ color: "var(--text)" }}>
+                    <div className="p-2 rounded" style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)" }}>
+                      CNAME → cname.vercel-dns.com
+                    </div>
+                    <p className="text-center text-xs" style={{ color: "var(--text-muted)" }}>ou</p>
+                    <div className="p-2 rounded" style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)" }}>
+                      A → 76.76.21.21
+                    </div>
                   </div>
-                  <p className="text-center text-xs" style={{ color: "var(--text-muted)" }}>ou</p>
-                  <div className="p-2 rounded" style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)" }}>
-                    A @ 76.76.21.21
-                  </div>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Após apontar o DNS, salve a campanha — o domínio será registrado automaticamente.
+                  </p>
                 </div>
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  Após apontar o DNS, adicione o domínio no painel do Vercel. O SSL é gerado automaticamente.
-                </p>
+
+                {/* Status */}
+                <div className="p-4 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,.06)", background: "rgba(0,0,0,.15)" }}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-xs" style={{ color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>Status do domínio</span>
+                    <button
+                      onClick={() => checkDomainStatus(settings.customDomain)}
+                      disabled={domainChecking}
+                      className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                      style={{ background: "rgba(99,102,241,.15)", border: "1px solid rgba(99,102,241,.3)", color: "#818cf8", cursor: "pointer", fontFamily: "inherit" }}>
+                      {domainChecking ? "Verificando..." : "↻ Verificar status"}
+                    </button>
+                  </div>
+
+                  {domainStatus ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: "Registrado na Vercel", ok: domainStatus.registered },
+                        { label: "DNS configurado", ok: domainStatus.dnsConfigured },
+                        { label: "SSL ativo", ok: domainStatus.sslReady },
+                        { label: "Domínio ativo", ok: domainStatus.active },
+                      ].map(item => (
+                        <div key={item.label} className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                          style={{ background: item.ok ? "rgba(34,197,94,.06)" : "rgba(239,68,68,.06)", border: `1px solid ${item.ok ? "rgba(34,197,94,.2)" : "rgba(239,68,68,.2)"}` }}>
+                          <span style={{ color: item.ok ? "#4ade80" : "#f87171", fontSize: 14 }}>{item.ok ? "✓" : "✗"}</span>
+                          <span className="text-xs" style={{ color: item.ok ? "#4ade80" : "#f87171" }}>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      Clique em "Verificar status" para checar DNS, SSL e disponibilidade do domínio.
+                    </p>
+                  )}
+
+                  {domainStatus && !domainStatus.registered && (
+                    <button
+                      onClick={() => registerDomain(settings.customDomain)}
+                      disabled={domainRegistering}
+                      className="w-full text-sm py-2 rounded-lg font-semibold"
+                      style={{ background: "rgba(99,102,241,.2)", border: "1px solid rgba(99,102,241,.4)", color: "#818cf8", cursor: "pointer", fontFamily: "inherit" }}>
+                      {domainRegistering ? "Registrando..." : "Registrar domínio na Vercel"}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

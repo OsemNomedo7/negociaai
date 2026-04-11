@@ -68,6 +68,7 @@ export async function POST(
       error: "Erro ao gerar link de pagamento.",
       status: sigiloRes.status,
       detail: sigiloData,
+      debug: { amountRecebido: amount, priceInCents },
     }, { status: 502 });
   }
 

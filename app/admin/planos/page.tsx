@@ -38,7 +38,7 @@ export default function PlanosPage() {
   }
 
   const durationLabel = (days: number) =>
-    days === 1 ? "Diário" : days === 7 ? "Semanal" : days === 30 ? "Mensal" : `${days} dias`;
+    days === 0 ? "Vitalício" : days === 1 ? "Diário" : days === 7 ? "Semanal" : days === 30 ? "Mensal" : `${days} dias`;
 
   const activePlans = plans.filter(p => p.active);
 
@@ -152,14 +152,14 @@ export default function PlanosPage() {
                         )}
                       </div>
                       <div style={{ fontSize: 13, color: "rgba(255,255,255,.35)", marginBottom: 32 }}>
-                        por {plan.durationDays} dia{plan.durationDays > 1 ? "s" : ""}
+                        {plan.durationDays === 0 ? "acesso vitalício" : `por ${plan.durationDays} dia${plan.durationDays > 1 ? "s" : ""}`}
                       </div>
 
                       {/* Features */}
                       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
                         {[
-                          `${plan.maxCampaigns} campanha${plan.maxCampaigns > 1 ? "s" : ""}`,
-                          `Até ${plan.maxDebtors.toLocaleString("pt-BR")} devedores`,
+                          plan.maxCampaigns === 0 ? "Campanhas ilimitadas" : `${plan.maxCampaigns} campanha${plan.maxCampaigns > 1 ? "s" : ""}`,
+                          plan.maxDebtors === 0 ? "Devedores ilimitados" : `Até ${plan.maxDebtors.toLocaleString("pt-BR")} devedores`,
                           ...features.slice(2).map(f => f.label),
                         ].map((item, fi) => (
                           <div key={fi} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: highlight ? "rgba(255,255,255,.75)" : "rgba(255,255,255,.5)" }}>

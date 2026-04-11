@@ -9,10 +9,9 @@ export async function GET(req: NextRequest) {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     include: { plan: true, _count: { select: { campaigns: true } } },
-    omit: { password: true },
   });
 
-  return NextResponse.json(users.map(u => ({
+  return NextResponse.json(users.map(({ password: _pw, ...u }) => ({
     ...u,
     planActive: u.planExpiresAt ? u.planExpiresAt > new Date() : false,
   })));

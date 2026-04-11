@@ -16,6 +16,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (body.planId !== undefined) data.planId = body.planId;
   if (body.planExpiresAt !== undefined) data.planExpiresAt = body.planExpiresAt ? new Date(body.planExpiresAt) : null;
 
-  const user = await prisma.user.update({ where: { id }, data, include: { plan: true }, omit: { password: true } });
-  return NextResponse.json(user);
+  const user = await prisma.user.update({ where: { id }, data, include: { plan: true } });
+  const { password: _pw, ...userData } = user;
+  return NextResponse.json(userData);
 }

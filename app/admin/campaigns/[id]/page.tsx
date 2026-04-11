@@ -21,7 +21,8 @@ interface CampaignSettings {
   faviconUrl: string; bannerImages: string[];
   pageTitle: string; whatsappNumber: string;
   webhookSecret: string;
-  sigilopayApiKey: string;
+  sigilopayClientId: string;
+  sigilopayClientSecret: string;
 }
 
 interface PageContent {
@@ -77,7 +78,7 @@ const DEFAULT_SETTINGS: Omit<CampaignSettings, "id"> = {
   companyName: "Caos Dívidas", companyLogo: "", logoHeight: 44,
   primaryColor: "#6366f1", secondaryColor: "#8b5cf6",
   discountPercent: 60, defaultDebtAmount: 1200, defaultDebtDesc: "Dívida em aberto",
-  checkoutUrl: "", scoreMin: 280, scoreMax: 420, scoreAfterPay: 820, whatsappNumber: "", webhookSecret: "", sigilopayApiKey: "",
+  checkoutUrl: "", scoreMin: 280, scoreMax: 420, scoreAfterPay: 820, whatsappNumber: "", webhookSecret: "", sigilopayClientId: "", sigilopayClientSecret: "",
   headerTitle: "Regularize sua situação financeira",
   headerSubtitle: "Consulte sua dívida e quite com até 60% de desconto",
   urgencyText: "⚡ Oferta por tempo limitado",
@@ -872,22 +873,35 @@ export default function CampaignEditorPage() {
               com o valor exato de cada devedor ao clicar em "Pagar via PIX". Não é necessário criar links manualmente.
             </p>
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-bold" style={{ color: "var(--text)" }}>API Key da SigiloPay</label>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Encontre sua API Key em: SigiloPay → Configurações → API. Ela será usada apenas no servidor, nunca exposta ao visitante.
-            </p>
-            <input
-              type="password"
-              value={settings.sigilopayApiKey}
-              onChange={e => updS("sigilopayApiKey", e.target.value)}
-              className="input-field font-mono"
-              placeholder="sk_live_..."
-              autoComplete="off"
-            />
-            {settings.sigilopayApiKey && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-bold" style={{ color: "var(--text)" }}>Client ID</label>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                Encontrado em: SigiloPay → Configurações → API → suas credenciais.
+              </p>
+              <input
+                type="text"
+                value={settings.sigilopayClientId}
+                onChange={e => updS("sigilopayClientId", e.target.value)}
+                className="input-field font-mono"
+                placeholder="client_id_..."
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-bold" style={{ color: "var(--text)" }}>Client Secret</label>
+              <input
+                type="password"
+                value={settings.sigilopayClientSecret}
+                onChange={e => updS("sigilopayClientSecret", e.target.value)}
+                className="input-field font-mono"
+                placeholder="client_secret_..."
+                autoComplete="off"
+              />
+            </div>
+            {settings.sigilopayClientId && settings.sigilopayClientSecret && (
               <p className="text-xs" style={{ color: "#34d399" }}>
-                ✓ API Key configurada — checkout dinâmico ativo
+                ✓ Credenciais configuradas — checkout dinâmico ativo
               </p>
             )}
           </div>

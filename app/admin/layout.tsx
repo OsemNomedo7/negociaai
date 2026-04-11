@@ -56,7 +56,7 @@ function AdminInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { document.title = "Caos Dívidas — Painel Admin"; }, []);
 
-  if (pathname === "/admin/login") return <>{children}</>;
+  if (pathname === "/admin/login" || pathname === "/admin/planos") return <>{children}</>;
 
   async function logout() {
     setLeaving(true);

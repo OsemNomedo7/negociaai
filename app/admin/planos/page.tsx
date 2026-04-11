@@ -80,11 +80,9 @@ export default function PlanosPage() {
 
       <div style={{ minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif", color: "#f8fafc", background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,.18) 0%, transparent 60%), #07070f" }}>
 
-        {/* Header */}
+        {/* Header — só botão de sair */}
         <header style={{ position: "sticky", top: 0, zIndex: 50, borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(7,7,15,.8)", backdropFilter: "blur(20px)" }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Logo" style={{ height: 40, objectFit: "contain" }} />
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
             <button onClick={logout} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 9, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.5)", fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h6a2 2 0 012 2v1" />
@@ -98,6 +96,8 @@ export default function PlanosPage() {
 
           {/* Hero */}
           <div style={{ textAlign: "center", marginBottom: 64 }} className="fade-in">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Logo" style={{ display: "block", margin: "0 auto 32px", width: 250, objectFit: "contain" }} />
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 99, background: "rgba(99,102,241,.1)", border: "1px solid rgba(99,102,241,.2)", fontSize: 12, fontWeight: 600, color: "#818cf8", letterSpacing: ".06em", marginBottom: 24 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1" }} />
               ACESSO À PLATAFORMA

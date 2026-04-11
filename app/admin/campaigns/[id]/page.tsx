@@ -21,8 +21,8 @@ interface CampaignSettings {
   faviconUrl: string; bannerImages: string[];
   pageTitle: string; whatsappNumber: string;
   webhookSecret: string;
-  sigilopayClientId: string;
-  sigilopayClientSecret: string;
+  sigilopayPublicKey: string;
+  sigilopaySecretKey: string;
 }
 
 interface PageContent {
@@ -78,7 +78,7 @@ const DEFAULT_SETTINGS: Omit<CampaignSettings, "id"> = {
   companyName: "Caos Dívidas", companyLogo: "", logoHeight: 44,
   primaryColor: "#6366f1", secondaryColor: "#8b5cf6",
   discountPercent: 60, defaultDebtAmount: 1200, defaultDebtDesc: "Dívida em aberto",
-  checkoutUrl: "", scoreMin: 280, scoreMax: 420, scoreAfterPay: 820, whatsappNumber: "", webhookSecret: "", sigilopayClientId: "", sigilopayClientSecret: "",
+  checkoutUrl: "", scoreMin: 280, scoreMax: 420, scoreAfterPay: 820, whatsappNumber: "", webhookSecret: "", sigilopayPublicKey: "", sigilopaySecretKey: "",
   headerTitle: "Regularize sua situação financeira",
   headerSubtitle: "Consulte sua dívida e quite com até 60% de desconto",
   urgencyText: "⚡ Oferta por tempo limitado",
@@ -875,31 +875,31 @@ export default function CampaignEditorPage() {
           </div>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="block text-sm font-bold" style={{ color: "var(--text)" }}>Client ID</label>
+              <label className="block text-sm font-bold" style={{ color: "var(--text)" }}>Chave Pública (x-public-key)</label>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                Encontrado em: SigiloPay → Configurações → API → suas credenciais.
+                Encontrada em: SigiloPay → Integrações → API → Gerar credenciais.
               </p>
               <input
                 type="text"
-                value={settings.sigilopayClientId}
-                onChange={e => updS("sigilopayClientId", e.target.value)}
+                value={settings.sigilopayPublicKey}
+                onChange={e => updS("sigilopayPublicKey", e.target.value)}
                 className="input-field font-mono"
-                placeholder="client_id_..."
+                placeholder="chave pública..."
                 autoComplete="off"
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-bold" style={{ color: "var(--text)" }}>Client Secret</label>
+              <label className="block text-sm font-bold" style={{ color: "var(--text)" }}>Chave Secreta (x-secret-key)</label>
               <input
                 type="password"
-                value={settings.sigilopayClientSecret}
-                onChange={e => updS("sigilopayClientSecret", e.target.value)}
+                value={settings.sigilopaySecretKey}
+                onChange={e => updS("sigilopaySecretKey", e.target.value)}
                 className="input-field font-mono"
-                placeholder="client_secret_..."
+                placeholder="chave secreta..."
                 autoComplete="off"
               />
             </div>
-            {settings.sigilopayClientId && settings.sigilopayClientSecret && (
+            {settings.sigilopayPublicKey && settings.sigilopaySecretKey && (
               <p className="text-xs" style={{ color: "#34d399" }}>
                 ✓ Credenciais configuradas — checkout dinâmico ativo
               </p>

@@ -101,8 +101,8 @@ model Campaign {
   pageContent      String   @default("{}")
   colorScheme      String   @default("{}")
 
-  sigilopayClientId     String   @default("")
-  sigilopayClientSecret String   @default("")
+  sigilopayPublicKey  String   @default("")
+  sigilopaySecretKey  String   @default("")
 
   debtors      Debtor[]
   logs         Log[]

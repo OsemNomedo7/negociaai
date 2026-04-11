@@ -84,7 +84,7 @@ export async function PUT(
       where: { id },
       data: updateData,
     });
-    const { webhookSecret: _secret, sigilopayClientId: _cid, sigilopayClientSecret: _cs, ...publicData } = campaign;
+    const { webhookSecret: _secret, sigilopayPublicKey: _pk, sigilopaySecretKey: _sk, ...publicData } = campaign;
     return NextResponse.json(publicData);
   } catch (err) {
     console.error("Campaign update error:", err);

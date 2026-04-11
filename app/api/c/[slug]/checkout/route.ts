@@ -11,7 +11,7 @@ export async function POST(
   if (!campaign || !campaign.active)
     return NextResponse.json({ error: "Campanha não encontrada." }, { status: 404 });
 
-  if (!campaign.sigilopayClientId || !campaign.sigilopayClientSecret)
+  if (!campaign.sigilopayPublicKey || !campaign.sigilopaySecretKey)
     return NextResponse.json({ error: "Integração SigiloPay não configurada nesta campanha." }, { status: 400 });
 
   const body = await req.json().catch(() => null);
@@ -22,11 +22,8 @@ export async function POST(
     return NextResponse.json({ error: "Nome, CPF e valor são obrigatórios." }, { status: 400 });
 
   const priceInCents = Math.round(amount * 100);
-  const basicAuth = Buffer.from(`${campaign.sigilopayClientId}:${campaign.sigilopayClientSecret}`).toString("base64");
 
   const payload = {
-    client_id: campaign.sigilopayClientId,
-    client_secret: campaign.sigilopayClientSecret,
     product: {
       name: campaign.name,
       externalId: `${campaign.slug}-${cpf.replace(/\D/g, "")}`,
@@ -57,9 +54,8 @@ export async function POST(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Basic ${basicAuth}`,
-      "x-client-id": campaign.sigilopayClientId,
-      "x-client-secret": campaign.sigilopayClientSecret,
+      "x-public-key": campaign.sigilopayPublicKey,
+      "x-secret-key": campaign.sigilopaySecretKey,
     },
     body: JSON.stringify(payload),
   });

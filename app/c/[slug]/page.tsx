@@ -374,6 +374,10 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  useEffect(() => {
+    if (campaign?.pageTitle) document.title = campaign.pageTitle;
+  }, [campaign?.pageTitle]);
+
   const handleCPFChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setCpf(formatCPF(e.target.value));
   }, []);

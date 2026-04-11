@@ -285,7 +285,7 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="f0" style={{ textAlign: "center", marginBottom: 28 }}>
             <img
-              src="/logo/logo.png"
+              src="/logo.png"
               alt="CAOS DÍVIDAS"
               className="lg-logo"
               style={{ height: 80, objectFit: "contain", display: "inline-block" }}

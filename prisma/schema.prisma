@@ -101,6 +101,8 @@ model Campaign {
   pageContent      String   @default("{}")
   colorScheme      String   @default("{}")
 
+  sigilopayApiKey  String   @default("")
+
   debtors      Debtor[]
   logs         Log[]
   chatSessions ChatSession[]

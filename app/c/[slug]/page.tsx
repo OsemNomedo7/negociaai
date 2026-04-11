@@ -409,6 +409,16 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
         body: JSON.stringify({ name: result.name, cpf: result.cpf, event: "CLIQUE_PAGAMENTO", debtorId: result.debtorId }),
       }).catch(() => {});
     }
+    // Tenta checkout dinâmico via SigiloPay
+    try {
+      const res = await fetch(`/api/c/${slug}/checkout`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: result.name, cpf: result.cpf, amount: result.discountedAmount }),
+      });
+      const data = await res.json();
+      if (data.checkoutUrl) { window.open(data.checkoutUrl, "_blank"); return; }
+    } catch { /* fallback abaixo */ }
+    // Fallback: link fixo da campanha (se não tiver SigiloPay configurado)
     if (result.checkoutUrl) window.open(result.checkoutUrl, "_blank");
   }
 

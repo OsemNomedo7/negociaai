@@ -21,6 +21,7 @@ interface CampaignSettings {
   faviconUrl: string; bannerImages: string[];
   pageTitle: string; whatsappNumber: string;
   webhookSecret: string;
+  sigilopayApiKey: string;
 }
 
 interface PageContent {
@@ -76,7 +77,7 @@ const DEFAULT_SETTINGS: Omit<CampaignSettings, "id"> = {
   companyName: "Caos Dívidas", companyLogo: "", logoHeight: 44,
   primaryColor: "#6366f1", secondaryColor: "#8b5cf6",
   discountPercent: 60, defaultDebtAmount: 1200, defaultDebtDesc: "Dívida em aberto",
-  checkoutUrl: "", scoreMin: 280, scoreMax: 420, scoreAfterPay: 820, whatsappNumber: "", webhookSecret: "",
+  checkoutUrl: "", scoreMin: 280, scoreMax: 420, scoreAfterPay: 820, whatsappNumber: "", webhookSecret: "", sigilopayApiKey: "",
   headerTitle: "Regularize sua situação financeira",
   headerSubtitle: "Consulte sua dívida e quite com até 60% de desconto",
   urgencyText: "⚡ Oferta por tempo limitado",
@@ -863,6 +864,42 @@ export default function CampaignEditorPage() {
 
         {/* ─── WEBHOOK ─── */}
         {activeTab === "webhook" && (<>
+          <Heading icon="⚡" title="Integração SigiloPay" />
+          <div className="p-4 rounded-xl text-sm" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
+            <p className="font-semibold mb-1" style={{ color: "var(--text)" }}>Checkout dinâmico por valor</p>
+            <p style={{ color: "var(--text-muted)" }}>
+              Com a API Key da SigiloPay configurada, o sistema gera um link de checkout automaticamente
+              com o valor exato de cada devedor ao clicar em "Pagar via PIX". Não é necessário criar links manualmente.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-bold" style={{ color: "var(--text)" }}>API Key da SigiloPay</label>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Encontre sua API Key em: SigiloPay → Configurações → API. Ela será usada apenas no servidor, nunca exposta ao visitante.
+            </p>
+            <input
+              type="password"
+              value={settings.sigilopayApiKey}
+              onChange={e => updS("sigilopayApiKey", e.target.value)}
+              className="input-field font-mono"
+              placeholder="sk_live_..."
+              autoComplete="off"
+            />
+            {settings.sigilopayApiKey && (
+              <p className="text-xs" style={{ color: "#34d399" }}>
+                ✓ API Key configurada — checkout dinâmico ativo
+              </p>
+            )}
+          </div>
+          <div className="border-t pt-5" style={{ borderColor: "var(--border)" }}>
+            <p className="text-sm font-bold mb-1" style={{ color: "var(--text)" }}>Link de Checkout manual (fallback)</p>
+            <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+              Usado apenas se a API Key não estiver configurada. Com a SigiloPay ativa, este campo é ignorado.
+            </p>
+            <input type="url" value={settings.checkoutUrl} onChange={e => updS("checkoutUrl", e.target.value)}
+              className="input-field" placeholder="https://..." />
+          </div>
+          <div className="border-t pt-5" style={{ borderColor: "var(--border)" }}>
           <Heading icon="🔗" title="Webhook de Pagamentos" />
           <div className="p-4 rounded-xl text-sm" style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)" }}>
             <p className="font-semibold mb-1" style={{ color: "var(--text)" }}>Como funciona</p>
@@ -927,6 +964,7 @@ export default function CampaignEditorPage() {
               O sistema detecta automaticamente o CPF nos campos: <code>cpf</code>, <code>document</code>, <code>payer_cpf</code>, <code>payer.identification.number</code>, <code>customer.cpf</code>.
               O status é lido de: <code>status</code>, <code>payment_status</code>, <code>situation</code>.
             </p>
+          </div>
           </div>
         </>)}
 

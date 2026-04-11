@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getAdminFromRequest } from "@/lib/auth";
+import { getTenantFromRequest } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const admin = await getAdminFromRequest(req);
-  if (!admin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const tenant = await getTenantFromRequest(req);
+  if (!tenant) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const userId = tenant.userId as number;
 
   const id = parseInt(params.id);
   if (isNaN(id)) return NextResponse.json({ error: "ID inválido." }, { status: 400 });
@@ -31,8 +32,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const admin = await getAdminFromRequest(req);
-  if (!admin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const tenant = await getTenantFromRequest(req);
+  if (!tenant) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const userId = tenant.userId as number;
 
   const id = parseInt(params.id);
   if (isNaN(id)) return NextResponse.json({ error: "ID inválido." }, { status: 400 });
@@ -94,8 +96,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const admin = await getAdminFromRequest(req);
-  if (!admin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const tenant = await getTenantFromRequest(req);
+  if (!tenant) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const userId = tenant.userId as number;
 
   const id = parseInt(params.id);
   if (isNaN(id)) return NextResponse.json({ error: "ID inválido." }, { status: 400 });

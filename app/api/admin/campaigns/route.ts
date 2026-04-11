@@ -1,28 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getAdminFromRequest } from "@/lib/auth";
+import { getTenantFromRequest } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  const admin = await getAdminFromRequest(req);
-  if (!admin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const tenant = await getTenantFromRequest(req);
+  if (!tenant) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const userId = tenant.userId as number;
 
   const campaigns = await prisma.campaign.findMany({
+    where: { userId },
     orderBy: { createdAt: "desc" },
-    include: {
-      _count: {
-        select: { debtors: true, logs: true },
-      },
-    },
+    include: { _count: { select: { debtors: true, logs: true } } },
   });
 
   const result = await Promise.all(
     campaigns.map(async (c) => {
-      const payments = await prisma.log.count({
-        where: { campaignId: c.id, event: "PAGAMENTO_CONCLUIDO" },
-      });
-      const consults = await prisma.log.count({
-        where: { campaignId: c.id, event: "CONSULTA" },
-      });
+      const payments = await prisma.log.count({ where: { campaignId: c.id, event: "PAGAMENTO_CONCLUIDO" } });
+      const consults = await prisma.log.count({ where: { campaignId: c.id, event: "CONSULTA" } });
       const { webhookSecret: _secret, ...rest } = c;
       let bannerImages: string[] = [];
       try { bannerImages = JSON.parse(rest.bannerImages || "[]"); } catch { /* noop */ }
@@ -34,33 +28,33 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await getAdminFromRequest(req);
-  if (!admin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const tenant = await getTenantFromRequest(req);
+  if (!tenant) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  const userId = tenant.userId as number;
 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
   const { name, slug, bannerImages, ...rest } = body as Record<string, unknown>;
 
-  if (!name || typeof name !== "string" || name.trim().length < 2) {
+  if (!name || typeof name !== "string" || name.trim().length < 2)
     return NextResponse.json({ error: "Nome é obrigatório." }, { status: 400 });
-  }
-
-  if (!slug || typeof slug !== "string") {
+  if (!slug || typeof slug !== "string")
     return NextResponse.json({ error: "Slug é obrigatório." }, { status: 400 });
-  }
 
   const cleanSlug = slug.toLowerCase().trim();
-
-  if (!/^[a-z0-9-]{3,}$/.test(cleanSlug)) {
-    return NextResponse.json({
-      error: "Slug deve ter pelo menos 3 caracteres e conter apenas letras minúsculas, números e hífens.",
-    }, { status: 400 });
-  }
+  if (!/^[a-z0-9-]{3,}$/.test(cleanSlug))
+    return NextResponse.json({ error: "Slug inválido." }, { status: 400 });
 
   const existing = await prisma.campaign.findUnique({ where: { slug: cleanSlug } });
-  if (existing) {
-    return NextResponse.json({ error: "Slug já está em uso." }, { status: 409 });
+  if (existing) return NextResponse.json({ error: "Slug já está em uso." }, { status: 409 });
+
+  // Verifica limite de campanhas do plano
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { plan: true } });
+  if (user?.plan) {
+    const count = await prisma.campaign.count({ where: { userId } });
+    if (count >= user.plan.maxCampaigns)
+      return NextResponse.json({ error: `Limite de ${user.plan.maxCampaigns} campanhas atingido no seu plano.` }, { status: 403 });
   }
 
   const bannerImagesStr = Array.isArray(bannerImages)
@@ -68,12 +62,7 @@ export async function POST(req: NextRequest) {
     : typeof bannerImages === "string" ? bannerImages : "[]";
 
   const campaign = await prisma.campaign.create({
-    data: {
-      name: name.trim(),
-      slug: cleanSlug,
-      bannerImages: bannerImagesStr,
-      ...(rest as object),
-    },
+    data: { name: name.trim(), slug: cleanSlug, bannerImages: bannerImagesStr, userId, ...(rest as object) },
   });
 
   const { webhookSecret: _secret, ...publicData } = campaign;

@@ -6,11 +6,12 @@ const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-secret-key"
 );
 
-export async function signToken(payload: Record<string, unknown>) {
+/* ── Generic ─────────────────────────────────────── */
+export async function signToken(payload: Record<string, unknown>, expiresIn = "8h") {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("8h")
+    .setExpirationTime(expiresIn)
     .sign(secret);
 }
 
@@ -23,6 +24,7 @@ export async function verifyToken(token: string) {
   }
 }
 
+/* ── DEV admin (painel DEV) ──────────────────────── */
 export async function getAdminFromRequest(req: NextRequest) {
   const token = req.cookies.get("admin_token")?.value;
   if (!token) return null;
@@ -33,6 +35,20 @@ export async function isAuthenticated() {
   const cookieStore = cookies();
   const token = cookieStore.get("admin_token")?.value;
   if (!token) return false;
-  const payload = await verifyToken(token);
-  return !!payload;
+  return !!(await verifyToken(token));
+}
+
+/* ── Tenant (painel admin por cliente) ───────────── */
+export async function getTenantFromRequest(req: NextRequest) {
+  const token = req.cookies.get("tenant_token")?.value;
+  if (!token) return null;
+  return await verifyToken(token);
+}
+
+export async function getTenantPlanActive(req: NextRequest): Promise<boolean> {
+  const payload = await getTenantFromRequest(req);
+  if (!payload) return false;
+  const exp = payload.planExpiresAt as string | null;
+  if (!exp) return false;
+  return new Date(exp) > new Date();
 }

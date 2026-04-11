@@ -26,23 +26,41 @@ export async function middleware(req: NextRequest) {
           return NextResponse.rewrite(url);
         }
       }
-    } catch {
-      // fallthrough → 404
-    }
+    } catch { /* fallthrough → 404 */ }
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  // ── Admin route protection ──────────────────────────────────────────────
-  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+  // ── DEV panel protection (/dev/*) ───────────────────────────────────────
+  if (pathname.startsWith("/dev") && pathname !== "/dev/login") {
     const token = req.cookies.get("admin_token")?.value;
-    if (!token) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
+    if (!token) return NextResponse.redirect(new URL("/dev/login", req.url));
+    const payload = await verifyToken(token);
+    if (!payload || payload.role !== "dev") {
+      const res = NextResponse.redirect(new URL("/dev/login", req.url));
+      res.cookies.set("admin_token", "", { maxAge: 0 });
+      return res;
     }
+  }
+
+  // ── Tenant panel protection (/admin/*) ──────────────────────────────────
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+    const token = req.cookies.get("tenant_token")?.value;
+    if (!token) return NextResponse.redirect(new URL("/admin/login", req.url));
+
     const payload = await verifyToken(token);
     if (!payload) {
-      const response = NextResponse.redirect(new URL("/admin/login", req.url));
-      response.cookies.set("admin_token", "", { maxAge: 0 });
-      return response;
+      const res = NextResponse.redirect(new URL("/admin/login", req.url));
+      res.cookies.set("tenant_token", "", { maxAge: 0 });
+      return res;
+    }
+
+    // Verifica plano ativo (exceto página de planos)
+    if (pathname !== "/admin/planos") {
+      const exp = payload.planExpiresAt as string | null;
+      const planActive = exp && new Date(exp) > new Date();
+      if (!planActive) {
+        return NextResponse.redirect(new URL("/admin/planos", req.url));
+      }
     }
   }
 

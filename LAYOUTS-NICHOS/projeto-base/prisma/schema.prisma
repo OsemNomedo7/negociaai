@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Debtor {
+  id          Int       @id @default(autoincrement())
+  name        String
+  cpf         String
+  amount      Float
+  description String
+  status      String    @default("PENDENTE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  campaignId  Int?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+  logs        Log[]
+
+  @@unique([cpf, campaignId])
+}
+
+model Log {
+  id         Int       @id @default(autoincrement())
+  name       String
+  cpf        String
+  event      String    @default("CONSULTA")
+  ip         String?
+  city       String?
+  state      String?
+  debtorId   Int?
+  debtor     Debtor?   @relation(fields: [debtorId], references: [id])
+  campaignId Int?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+  createdAt  DateTime  @default(now())
+}
+
+model Campaign {
+  id               Int      @id @default(autoincrement())
+  slug             String   @unique
+  name             String
+  customDomain     String?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  companyName      String   @default("NegociAI")
+  companyLogo      String   @default("")
+  logoHeight       Int      @default(44)
+  primaryColor     String   @default("#6366f1")
+  secondaryColor   String   @default("#8b5cf6")
+  faviconUrl       String   @default("")
+  pageTitle        String   @default("NegociAI")
+  headerTitle      String   @default("Regularize sua situação financeira")
+  headerSubtitle   String   @default("Consulte sua dívida e quite com até 60% de desconto")
+  discountPercent  Float    @default(60)
+  defaultDebtAmount Float   @default(1200)
+  defaultDebtDesc  String   @default("Dívida em aberto")
+  checkoutUrl      String   @default("")
+  webhookSecret    String   @default("")
+  scoreMin         Int      @default(280)
+  scoreMax         Int      @default(420)
+  scoreAfterPay    Int      @default(820)
+  urgencyText      String   @default("⚡ Oferta por tempo limitado")
+  ctaText          String   @default("Pagar via PIX agora")
+  footerText       String   @default("Ambiente 100% seguro.")
+  whatsappNumber   String   @default("")
+  bannerImages     String   @default("[]")
+  pageContent      String   @default("{}")
+  colorScheme      String   @default("{}")
+
+  debtors  Debtor[]
+  logs     Log[]
+}
+
+model Settings {
+  id                Int     @id @default(1)
+  companyName       String  @default("NegociAI")
+  companyLogo       String  @default("")
+  primaryColor      String  @default("#6366f1")
+  secondaryColor    String  @default("#8b5cf6")
+  discountPercent   Float   @default(60)
+  defaultDebtAmount Float   @default(1200.00)
+  defaultDebtDesc   String  @default("Dívida em aberto")
+  checkoutUrl       String  @default("")
+  scoreMin          Int     @default(280)
+  scoreMax          Int     @default(420)
+  scoreAfterPay     Int     @default(820)
+  headerTitle       String  @default("Regularize sua situação financeira")
+  headerSubtitle    String  @default("Consulte sua dívida e quite com até 60% de desconto")
+  urgencyText       String  @default("⚡ Oferta por tempo limitado — expira em breve!")
+  ctaText           String  @default("Pagar via PIX agora")
+  footerText        String  @default("Seus dados estão protegidos. Ambiente 100% seguro.")
+  faviconUrl        String  @default("")
+  bannerImages      String  @default("[]")
+  logoHeight        Int     @default(44)
+  pageTitle         String  @default("NegociAI")
+  pageContent       String  @default("{}")
+  colorScheme       String  @default("{}")
+  whatsappNumber    String  @default("")
+  webhookSecret     String  @default("")
+}
+
+model ChatSession {
+  id        Int           @id @default(autoincrement())
+  visitorId String        @unique
+  name      String?
+  cpf       String?
+  ip        String?
+  city      String?
+  state     String?
+  consulted Boolean       @default(false)
+  status    String        @default("OPEN")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int         @id @default(autoincrement())
+  sessionId Int
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+  content   String
+  sender    String
+  read      Boolean     @default(false)
+  createdAt DateTime    @default(now())
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}

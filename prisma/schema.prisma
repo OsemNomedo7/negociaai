@@ -7,6 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Plan {
+  id           Int      @id @default(autoincrement())
+  name         String   // "Diário", "Semanal", "Mensal"
+  price        Float    @default(0)
+  durationDays Int      @default(30)
+  maxCampaigns Int      @default(3)
+  maxDebtors   Int      @default(1000)
+  checkoutUrl  String   @default("")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  users        User[]
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  password      String
+  planId        Int?
+  plan          Plan?     @relation(fields: [planId], references: [id])
+  planExpiresAt DateTime?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  campaigns     Campaign[]
+}
+
 model Debtor {
   id          Int       @id @default(autoincrement())
   name        String
@@ -46,14 +73,16 @@ model Campaign {
   active           Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  userId           Int?
+  user             User?    @relation(fields: [userId], references: [id])
 
-  companyName      String   @default("NegociAI")
+  companyName      String   @default("Caos Dívidas")
   companyLogo      String   @default("")
   logoHeight       Int      @default(44)
   primaryColor     String   @default("#6366f1")
   secondaryColor   String   @default("#8b5cf6")
   faviconUrl       String   @default("")
-  pageTitle        String   @default("NegociAI")
+  pageTitle        String   @default("Caos Dívidas")
   headerTitle      String   @default("Regularize sua situação financeira")
   headerSubtitle   String   @default("Consulte sua dívida e quite com até 60% de desconto")
   discountPercent  Float    @default(60)
@@ -78,7 +107,7 @@ model Campaign {
 
 model Settings {
   id                Int     @id @default(1)
-  companyName       String  @default("NegociAI")
+  companyName       String  @default("Caos Dívidas")
   companyLogo       String  @default("")
   primaryColor      String  @default("#6366f1")
   secondaryColor    String  @default("#8b5cf6")
@@ -97,7 +126,7 @@ model Settings {
   faviconUrl        String  @default("")
   bannerImages      String  @default("[]")
   logoHeight        Int     @default(44)
-  pageTitle         String  @default("NegociAI")
+  pageTitle         String  @default("Caos Dívidas")
   pageContent       String  @default("{}")
   colorScheme       String  @default("{}")
   whatsappNumber    String  @default("")

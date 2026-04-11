@@ -57,7 +57,7 @@ function ParticleCanvas() {
 
 /* ── Login ─────────────────────────────────────── */
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
@@ -67,14 +67,18 @@ export default function LoginPage() {
   useEffect(() => { const t = setTimeout(() => setIn(true), 60); return () => clearTimeout(t); }, []);
   useEffect(() => { document.title = "Caos Dívidas — Login"; }, []);
 
+  // Mostra mensagem se veio do cadastro
+  const registered = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("registered") === "1";
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      const res  = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) });
+      const res  = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
       const data = await res.json();
-      if (!res.ok) setError(data.error || "Credenciais inválidas.");
-      else router.push("/admin/dashboard");
+      if (!res.ok) { setError(data.error || "Credenciais inválidas."); return; }
+      if (data.planActive) router.push("/admin/dashboard");
+      else router.push("/admin/planos");
     } catch { setError("Falha na conexão."); }
     finally  { setLoading(false); }
   }
@@ -315,15 +319,15 @@ export default function LoginPage() {
           <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div className="f2">
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(248,250,252,.45)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 7 }}>
-                Usuário
+                E-mail
               </label>
               <div className="lg-input-wrap">
                 <span className="lg-input-icon">
                   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </span>
-                <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="admin" className="lg-input" autoComplete="username" />
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" className="lg-input" autoComplete="email" />
               </div>
             </div>
 
@@ -364,6 +368,14 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
+
+          {registered && (
+            <p style={{ textAlign: "center", fontSize: 13, color: "#4ade80", marginTop: 12 }}>✓ Conta criada! Faça login para continuar.</p>
+          )}
+          <p style={{ textAlign: "center", fontSize: 13, color: "rgba(255,255,255,.35)", marginTop: 16 }}>
+            Não tem conta?{" "}
+            <a href="/cadastro" style={{ color: "#818cf8", textDecoration: "none", fontWeight: 600 }}>Criar conta grátis</a>
+          </p>
 
           <div className="lg-sep" />
 

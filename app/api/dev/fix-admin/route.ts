@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import bcrypt from "bcryptjs";
 
-// Rota temporária para corrigir o email do usuário admin
+// Rota temporária para corrigir credenciais do usuário admin
 // DELETE este arquivo após o uso!
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -16,22 +17,33 @@ export async function GET(req: NextRequest) {
   });
 
   if (users.length === 0) {
-    return NextResponse.json({ error: "Nenhum usuário encontrado." }, { status: 404 });
+    // Nenhum usuário — cria o admin do zero
+    const hash = await bcrypt.hash("admin123", 12);
+    const created = await prisma.user.create({
+      data: { name: "Admin", email: "admin@admin.com", password: hash, active: true },
+      include: { _count: { select: { campaigns: true } } },
+    });
+    return NextResponse.json({
+      ok: true, action: "created",
+      user: { id: created.id, name: created.name, email: created.email },
+      campanhas: created._count.campaigns,
+    });
   }
 
   const target = users.find(u => u.name.toLowerCase() === "admin") ?? users[0];
+  const hash = await bcrypt.hash("admin123", 12);
 
   const updated = await prisma.user.update({
     where: { id: target.id },
-    data: { email: "admin@admin.com", active: true },
+    data: { email: "admin@admin.com", password: hash, active: true },
     include: { _count: { select: { campaigns: true } } },
   });
 
   return NextResponse.json({
-    ok: true,
-    message: "Email atualizado com sucesso!",
+    ok: true, action: "updated",
+    message: "Email e senha redefinidos com sucesso!",
     user: { id: updated.id, name: updated.name, email: updated.email, active: updated.active },
     campanhas: updated._count.campaigns,
-    allUsers: users,
+    allUsers: users.map(u => ({ id: u.id, name: u.name, email: u.email, active: u.active })),
   });
 }

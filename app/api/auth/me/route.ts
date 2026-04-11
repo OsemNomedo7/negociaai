@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
   const user = await prisma.user.findUnique({
     where: { id: payload.userId as number },
     include: { plan: true },
-    omit: { password: true },
   });
   if (!user) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
 
-  const planActive = user.planExpiresAt ? user.planExpiresAt > new Date() : false;
-  return NextResponse.json({ ...user, planActive });
+  const { password: _pw, ...userData } = user;
+  const planActive = userData.planExpiresAt ? userData.planExpiresAt > new Date() : false;
+  return NextResponse.json({ ...userData, planActive });
 }

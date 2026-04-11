@@ -6,7 +6,10 @@ export async function GET(req: NextRequest) {
   const admin = await getAdminFromRequest(req);
   if (!admin || admin.role !== "dev") return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
 
-  const plans = await prisma.plan.findMany({ orderBy: { durationDays: "asc" } });
+  const plans = await prisma.plan.findMany({
+    orderBy: { durationDays: "asc" },
+    include: { _count: { select: { users: true } } },
+  });
   return NextResponse.json(plans);
 }
 

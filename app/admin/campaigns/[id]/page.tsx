@@ -73,7 +73,7 @@ interface ColorScheme {
 /* ─── Defaults ────────────────────────────────── */
 const DEFAULT_SETTINGS: Omit<CampaignSettings, "id"> = {
   name: "", slug: "", customDomain: "", active: true,
-  companyName: "NegociAI", companyLogo: "", logoHeight: 44,
+  companyName: "Caos Dívidas", companyLogo: "", logoHeight: 44,
   primaryColor: "#6366f1", secondaryColor: "#8b5cf6",
   discountPercent: 60, defaultDebtAmount: 1200, defaultDebtDesc: "Dívida em aberto",
   checkoutUrl: "", scoreMin: 280, scoreMax: 420, scoreAfterPay: 820, whatsappNumber: "", webhookSecret: "",
@@ -82,7 +82,7 @@ const DEFAULT_SETTINGS: Omit<CampaignSettings, "id"> = {
   urgencyText: "⚡ Oferta por tempo limitado",
   ctaText: "Pagar via PIX agora",
   footerText: "Seus dados estão protegidos. Ambiente 100% seguro.",
-  faviconUrl: "", bannerImages: [], pageTitle: "NegociAI",
+  faviconUrl: "", bannerImages: [], pageTitle: "Caos Dívidas",
 };
 
 const DEFAULT_CONTENT: PageContent = {
@@ -128,7 +128,7 @@ const DEFAULT_CONTENT: PageContent = {
   contactTitle: "Fale conosco",
   contactSubtitle: "Nossa equipe está pronta para te ajudar. Escolha o canal de sua preferência.",
   contactPhone: "(11) 91234-5678", contactPhoneSub: "Seg–Sex, 8h às 20h",
-  contactEmail: "suporte@negociai.com.br", contactEmailSub: "Resposta em até 2h úteis",
+  contactEmail: "suporte@caosdividas.com.br", contactEmailSub: "Resposta em até 2h úteis",
   contactAddress: "Av. Paulista, 1000 — São Paulo, SP", contactAddressSub: "CEP 01310-100",
   contactHours: "Segunda à Sexta, 8h às 20h", contactHoursSub: "Sábados, 9h às 14h",
   ctaCardTitle: "Pronto para limpar seu nome?",
@@ -207,7 +207,7 @@ export default function CampaignEditorPage() {
           id: d.id,
           bannerImages: parseBannerImages(d.bannerImages),
           logoHeight: d.logoHeight ?? 44,
-          pageTitle: d.pageTitle ?? d.companyName ?? "NegociAI",
+          pageTitle: d.pageTitle ?? d.companyName ?? "Caos Dívidas",
         });
         setPageContent({ ...DEFAULT_CONTENT, ...parseJson(d.pageContent, {}) });
         setColorScheme({ ...DEFAULT_COLORS, ...parseJson(d.colorScheme, {}) });
@@ -457,7 +457,7 @@ export default function CampaignEditorPage() {
 
           <Field label="Nome da empresa" value={settings.companyName} onChange={v => updS("companyName", v)} />
           <Field label="Título da guia do navegador (tab)" value={settings.pageTitle} onChange={v => updS("pageTitle", v)}
-            hint="Ex: NegociAI — Regularize sua dívida" />
+            hint="Ex: Caos Dívidas — Regularize sua dívida" />
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-3">

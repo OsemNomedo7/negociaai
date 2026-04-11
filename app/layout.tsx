@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NegociAI — Regularize sua dívida",
+  title: "Caos Dívidas",
   description: "Quite sua dívida com até 60% de desconto. Consulte agora e recupere seu crédito.",
+  icons: { icon: "/logo.png" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

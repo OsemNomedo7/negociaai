@@ -65,6 +65,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => { const t = setTimeout(() => setIn(true), 60); return () => clearTimeout(t); }, []);
+  useEffect(() => { document.title = "Caos Dívidas — Login"; }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

@@ -50,13 +50,13 @@ const EMPTY_FORM: Omit<Campaign, "id" | "active" | "stats" | "_count"> = {
   slug: "",
   name: "",
   customDomain: "",
-  companyName: "NegociAI",
+  companyName: "Caos Dívidas",
   companyLogo: "",
   logoHeight: 44,
   primaryColor: "#6366f1",
   secondaryColor: "#8b5cf6",
   faviconUrl: "",
-  pageTitle: "NegociAI",
+  pageTitle: "Caos Dívidas",
   headerTitle: "Regularize sua situação financeira",
   headerSubtitle: "Consulte sua dívida e quite com até 60% de desconto",
   discountPercent: 60,
@@ -147,7 +147,7 @@ function CampaignModal({
           primaryColor: initial.primaryColor ?? "#6366f1",
           secondaryColor: initial.secondaryColor ?? "#8b5cf6",
           faviconUrl: initial.faviconUrl ?? "",
-          pageTitle: initial.pageTitle ?? "NegociAI",
+          pageTitle: initial.pageTitle ?? "Caos Dívidas",
           headerTitle: initial.headerTitle ?? EMPTY_FORM.headerTitle,
           headerSubtitle: initial.headerSubtitle ?? EMPTY_FORM.headerSubtitle,
           discountPercent: initial.discountPercent ?? 60,
@@ -254,7 +254,7 @@ function CampaignModal({
               />
             </FieldGroup>
             <FieldGroup label="Título da página (SEO)">
-              <Input value={form.pageTitle} onChange={v => set("pageTitle", v)} placeholder="NegociAI" />
+              <Input value={form.pageTitle} onChange={v => set("pageTitle", v)} placeholder="Caos Dívidas" />
             </FieldGroup>
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeProvider } from "@/lib/theme";
@@ -48,6 +48,8 @@ function AdminInner({ children }: { children: React.ReactNode }) {
   const router    = useRouter();
   const [open,    setOpen]    = useState(false);
   const [leaving, setLeaving] = useState(false);
+
+  useEffect(() => { document.title = "Caos Dívidas — Painel Admin"; }, []);
 
   if (pathname === "/admin/login") return <>{children}</>;
 

@@ -133,7 +133,7 @@ export default function DevLoginPage() {
           {/* Logo e badge */}
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Caos Dívidas" style={{ height: 140, objectFit: "contain", marginBottom: 24, filter: "drop-shadow(0 0 20px rgba(239,68,68,.45))" }} />
+            <img src="/logo.png" alt="Caos Dívidas" style={{ display: "block", height: 140, objectFit: "contain", margin: "0 auto 24px", filter: "drop-shadow(0 0 20px rgba(239,68,68,.45))" }} />
 
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 6,

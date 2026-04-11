@@ -976,10 +976,12 @@ function WebhookTab() {
       {box(<>
         {sectionTitle("URL do Webhook")}
         <p style={{ fontSize: 13, color: "rgba(255,255,255,.45)", marginBottom: 14, lineHeight: 1.6 }}>
-          Configure essa URL na sua plataforma de pagamento (Hotmart, Kiwify, PerfectPay, etc.)
-          para que o plano seja liberado automaticamente após a compra.
+          Cadastre uma URL diferente para cada plano na SigiloPay. O <code style={{ color: "#818cf8", background: "rgba(99,102,241,.1)", padding: "1px 6px", borderRadius: 4 }}>planId</code> na URL identifica qual plano ativar após o pagamento.
         </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+
+        {/* URL genérica */}
+        <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>URL base</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <code style={{
             flex: 1, padding: "10px 14px", background: "rgba(255,255,255,.04)",
             border: "1px solid rgba(255,255,255,.1)", borderRadius: 9,
@@ -989,6 +991,40 @@ function WebhookTab() {
           </code>
           <CopyBtn text={webhookUrl} k="url" />
         </div>
+
+        {/* URLs por plano */}
+        {plans.length > 0 && (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>URL por plano (use estas na SigiloPay)</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {plans.map((p, i) => {
+                const planUrl = `${webhookUrl}?planId=${p.id}${savedSecret ? `&secret=${savedSecret}` : ""}`;
+                return (
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#818cf8", width: 18, flexShrink: 0 }}>{i + 1}.</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", marginBottom: 3 }}>{p.name}</div>
+                      <code style={{
+                        display: "block", padding: "8px 12px", background: "rgba(255,255,255,.04)",
+                        border: "1px solid rgba(255,255,255,.08)", borderRadius: 8,
+                        fontSize: 12, color: "#94a3b8", fontFamily: "monospace",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>
+                        {planUrl}
+                      </code>
+                    </div>
+                    <CopyBtn text={planUrl} k={`url-plan-${p.id}`} />
+                  </div>
+                );
+              })}
+            </div>
+            {!savedSecret && (
+              <div style={{ marginTop: 10, fontSize: 12, color: "rgba(245,158,11,.7)" }}>
+                Configure e salve o secret acima para que ele apareça automaticamente nas URLs.
+              </div>
+            )}
+          </>
+        )}
       </>)}
 
       {/* Secret */}

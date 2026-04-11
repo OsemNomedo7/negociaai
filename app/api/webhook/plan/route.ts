@@ -78,7 +78,8 @@ export async function POST(req: NextRequest) {
   }
 
   const email = extractEmail(body);
-  const planId = extractPlanId(body);
+  // planId pode vir no body OU direto na URL (?planId=1) — útil para SigiloPay
+  const planId = extractPlanId(body) ?? (url.searchParams.get("planId") ? Number(url.searchParams.get("planId")) : null);
 
   if (!email || !planId)
     return NextResponse.json({ error: "email e planId são obrigatórios.", received: { email, planId } }, { status: 400 });

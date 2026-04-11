@@ -178,24 +178,16 @@ function AdminInner({ children }: { children: React.ReactNode }) {
 
           {/* Logo */}
           <div className="adm-logo">
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <img
                 src="/logo.png"
-                alt="CAOS DÍVIDAS"
+                alt="Logo"
                 style={{
-                  height: 36, width: "auto", objectFit: "contain",
+                  height: 64, width: "auto", objectFit: "contain",
                   mixBlendMode: "screen",
                   filter: "drop-shadow(0 0 10px rgba(239,68,68,.3)) saturate(1.2)",
                 }}
               />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#f8fafc", letterSpacing: "-.01em" }}>
-                  CAOS DÍVIDAS
-                </div>
-                <div style={{ fontSize: 10, color: "rgba(248,250,252,.3)", marginTop: 1, letterSpacing: ".04em" }}>
-                  Painel admin
-                </div>
-              </div>
             </div>
           </div>
 

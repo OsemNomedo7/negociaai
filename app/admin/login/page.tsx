@@ -288,7 +288,7 @@ export default function LoginPage() {
               src="/logo.png"
               alt="CAOS DÍVIDAS"
               className="lg-logo"
-              style={{ height: 80, objectFit: "contain", display: "inline-block" }}
+              style={{ height: 160, objectFit: "contain", display: "inline-block" }}
             />
           </div>
 

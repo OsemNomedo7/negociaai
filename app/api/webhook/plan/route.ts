@@ -104,6 +104,10 @@ export async function POST(req: NextRequest) {
     data: { planId: plan.id, planExpiresAt, active: true },
   });
 
+  await prisma.planPayment.create({
+    data: { userId: user.id, planId: plan.id, amount: plan.price },
+  });
+
   return NextResponse.json({
     ok: true,
     user: { name: user.name, email: user.email },

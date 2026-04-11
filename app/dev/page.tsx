@@ -13,6 +13,7 @@ interface Stats {
   totalDebtors: number; paidDebtors: number;
   totalConsults: number; totalPayments: number;
   monthlyRevenue: number; conversionRate: string;
+  revenueAllTime: number; revenueThisMonth: number;
   days: DayStats[];
   recentUsers: User[]; recentLogs: RecentLog[];
 }
@@ -218,6 +219,12 @@ function OverviewTab({ stats }: { stats: Stats | null }) {
       chart: undefined,
       icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>,
     },
+    {
+      label: "Receita Real (mês)", value: brl(stats.revenueThisMonth),
+      sub: `Total acumulado: ${brl(stats.revenueAllTime)}`, color: "#22c55e",
+      chart: undefined,
+      icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>,
+    },
   ];
 
   const secondary = [
@@ -230,7 +237,7 @@ function OverviewTab({ stats }: { stats: Stats | null }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Primary KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12 }}>
         {kpis.map(k => (
           <div key={k.label} style={{
             background: "linear-gradient(145deg, #111827, #0f1420)",

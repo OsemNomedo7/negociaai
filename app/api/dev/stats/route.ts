@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     prisma.log.count({ where: { event: "PAGAMENTO_CONCLUIDO" } }),
   ]);
 
-  // Receita estimada mensal
+  // Receita estimada mensal (MRR)
   const activePlanUsers = await prisma.user.findMany({
     where: { planExpiresAt: { gt: now }, active: true },
     include: { plan: { select: { price: true, durationDays: true } } },
@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
     if (!u.plan || u.plan.durationDays <= 0) return acc;
     return acc + u.plan.price * (30 / u.plan.durationDays);
   }, 0);
+
+  // Receita real — pagamentos registrados
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [revenueAllTime, revenueThisMonth] = await Promise.all([
+    prisma.planPayment.aggregate({ _sum: { amount: true } }),
+    prisma.planPayment.aggregate({ _sum: { amount: true }, where: { createdAt: { gte: startOfMonth } } }),
+  ]);
 
   // Atividade dos últimos 7 dias
   const sevenDaysAgo = new Date();
@@ -81,6 +88,8 @@ export async function GET(req: NextRequest) {
     totalDebtors, paidDebtors,
     totalConsults, totalPayments,
     monthlyRevenue,
+    revenueAllTime: revenueAllTime._sum.amount ?? 0,
+    revenueThisMonth: revenueThisMonth._sum.amount ?? 0,
     newUsersMonth,
     conversionRate: totalConsults > 0 ? ((totalPayments / totalConsults) * 100).toFixed(1) : "0.0",
     days,

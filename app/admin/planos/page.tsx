@@ -143,7 +143,7 @@ export default function PlanosPage() {
                       <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 6 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,.45)" }}>R$</span>
                         <span style={{ fontSize: 48, fontWeight: 900, lineHeight: 1, color: highlight ? "#c4b5fd" : "#f8fafc" }}>
-                          {plan.price.toFixed(0)}
+                          {Math.floor(plan.price)}
                         </span>
                         {plan.price % 1 !== 0 && (
                           <span style={{ fontSize: 20, fontWeight: 700, color: "rgba(255,255,255,.6)", alignSelf: "flex-start", marginTop: 8 }}>

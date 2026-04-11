@@ -21,7 +21,8 @@ export async function POST(
   if (!name || !cpf || !amount || amount <= 0)
     return NextResponse.json({ error: "Nome, CPF e valor são obrigatórios." }, { status: 400 });
 
-  const priceInCents = Math.round(amount * 100);
+  const MAX_SIGILO = 100000; // R$ 1.000,00 — limite da SigiloPay
+  const priceInCents = Math.min(Math.round(amount * 100), MAX_SIGILO);
 
   const payload = {
     product: {

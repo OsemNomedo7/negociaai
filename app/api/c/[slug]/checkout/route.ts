@@ -21,12 +21,12 @@ export async function POST(
   if (!name || !cpf || !amount || amount <= 0)
     return NextResponse.json({ error: "Nome, CPF e valor são obrigatórios." }, { status: 400 });
 
-  // Basic auth: base64(client_id:client_secret)
+  const priceInCents = Math.round(amount * 100);
   const basicAuth = Buffer.from(`${campaign.sigilopayClientId}:${campaign.sigilopayClientSecret}`).toString("base64");
 
-  const priceInCents = Math.round(amount * 100);
-
   const payload = {
+    client_id: campaign.sigilopayClientId,
+    client_secret: campaign.sigilopayClientSecret,
     product: {
       name: campaign.name,
       externalId: `${campaign.slug}-${cpf.replace(/\D/g, "")}`,
@@ -58,6 +58,8 @@ export async function POST(
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Basic ${basicAuth}`,
+      "x-client-id": campaign.sigilopayClientId,
+      "x-client-secret": campaign.sigilopayClientSecret,
     },
     body: JSON.stringify(payload),
   });

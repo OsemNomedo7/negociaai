@@ -39,11 +39,19 @@ export async function GET(req: NextRequest) {
     include: { _count: { select: { campaigns: true } } },
   });
 
+  // Busca todas campanhas para diagnóstico
+  const allCampaigns = await prisma.campaign.findMany({
+    select: { id: true, name: true, slug: true, userId: true, active: true },
+    orderBy: { id: "asc" },
+  });
+
   return NextResponse.json({
     ok: true, action: "updated",
     message: "Email e senha redefinidos com sucesso!",
+    loginCom: { email: "admin@admin.com", senha: "admin123" },
     user: { id: updated.id, name: updated.name, email: updated.email, active: updated.active },
-    campanhas: updated._count.campaigns,
-    allUsers: users.map(u => ({ id: u.id, name: u.name, email: u.email, active: u.active })),
+    campanhasDoUsuario: updated._count.campaigns,
+    todasCampanhas: allCampaigns,
+    todosUsuarios: users.map(u => ({ id: u.id, name: u.name, email: u.email, active: u.active })),
   });
 }

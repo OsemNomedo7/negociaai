@@ -3,49 +3,6 @@ import { prisma } from "@/lib/db";
 
 const SIGILO_BASE = "https://app.sigilopay.com.br/api/v1";
 
-async function getSigilopayToken(clientId: string, clientSecret: string): Promise<{ token: string | null; debug: unknown }> {
-  const attempts: unknown[] = [];
-
-  // Tentativa 1: POST JSON com grant_type
-  try {
-    const res = await fetch(`${SIGILO_BASE}/oauth/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, grant_type: "client_credentials" }),
-    });
-    const data = await res.json().catch(() => null);
-    attempts.push({ try: 1, url: `${SIGILO_BASE}/oauth/token`, status: res.status, data });
-    if (data?.access_token) return { token: data.access_token, debug: attempts };
-  } catch (e) { attempts.push({ try: 1, error: String(e) }); }
-
-  // Tentativa 2: POST form-urlencoded com Basic auth
-  try {
-    const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-    const res = await fetch(`${SIGILO_BASE}/oauth/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", "Authorization": `Basic ${basic}` },
-      body: "grant_type=client_credentials",
-    });
-    const data = await res.json().catch(() => null);
-    attempts.push({ try: 2, url: `${SIGILO_BASE}/oauth/token`, status: res.status, data });
-    if (data?.access_token) return { token: data.access_token, debug: attempts };
-  } catch (e) { attempts.push({ try: 2, error: String(e) }); }
-
-  // Tentativa 3: /auth/token
-  try {
-    const res = await fetch(`${SIGILO_BASE}/auth/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
-    });
-    const data = await res.json().catch(() => null);
-    attempts.push({ try: 3, url: `${SIGILO_BASE}/auth/token`, status: res.status, data });
-    if (data?.access_token) return { token: data.access_token, debug: attempts };
-  } catch (e) { attempts.push({ try: 3, error: String(e) }); }
-
-  return { token: null, debug: attempts };
-}
-
 export async function POST(
   req: NextRequest,
   { params }: { params: { slug: string } }
@@ -64,14 +21,8 @@ export async function POST(
   if (!name || !cpf || !amount || amount <= 0)
     return NextResponse.json({ error: "Nome, CPF e valor são obrigatórios." }, { status: 400 });
 
-  const { token, debug: authDebug } = await getSigilopayToken(campaign.sigilopayClientId, campaign.sigilopayClientSecret);
-
-  if (!token) {
-    return NextResponse.json({
-      error: "Falha na autenticação com SigiloPay.",
-      authDebug,
-    }, { status: 502 });
-  }
+  // Basic auth: base64(client_id:client_secret)
+  const basicAuth = Buffer.from(`${campaign.sigilopayClientId}:${campaign.sigilopayClientSecret}`).toString("base64");
 
   const priceInCents = Math.round(amount * 100);
 
@@ -106,7 +57,7 @@ export async function POST(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
+      "Authorization": `Basic ${basicAuth}`,
     },
     body: JSON.stringify(payload),
   });
@@ -116,8 +67,8 @@ export async function POST(
   if (!sigiloRes.ok || !sigiloData?.checkoutUrl) {
     return NextResponse.json({
       error: "Erro ao gerar link de pagamento.",
-      checkoutError: sigiloData,
-      checkoutStatus: sigiloRes.status,
+      status: sigiloRes.status,
+      detail: sigiloData,
     }, { status: 502 });
   }
 

@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 // ── Types ────────────────────────────────────────────────────────────────────
-type Tab = "overview" | "clientes" | "campanhas" | "logs" | "planos";
+type Tab = "overview" | "clientes" | "campanhas" | "logs" | "planos" | "webhook";
 
 interface Stats {
   totalUsers: number; activePlans: number; blockedUsers: number;
@@ -137,6 +137,11 @@ const IcoCard = () => (
   <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
     <rect x="1" y="4" width="22" height="16" rx="2" />
     <line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+);
+const IcoWebhook = () => (
+  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
   </svg>
 );
 const IcoLogout = () => (
@@ -849,6 +854,291 @@ function PlanosTab({ plans, onReload }: { plans: Plan[]; onReload: () => void })
   );
 }
 
+// ── Webhook Tab ───────────────────────────────────────────────────────────────
+interface Activation {
+  id: number; name: string; email: string;
+  planExpiresAt: string; updatedAt: string;
+  plan: { name: string } | null;
+}
+
+function WebhookTab() {
+  const [secret, setSecret] = useState("");
+  const [savedSecret, setSavedSecret] = useState("");
+  const [activations, setActivations] = useState<Activation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testPlanId, setTestPlanId] = useState("");
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [plans, setPlans] = useState<{ id: number; name: string }[]>([]);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+  useEffect(() => {
+    async function load() {
+      const [sRes, pRes] = await Promise.all([
+        fetch("/api/dev/settings"),
+        fetch("/api/dev/plans"),
+      ]);
+      const s = await sRes.json();
+      const p = await pRes.json();
+      setSecret(s.planWebhookSecret ?? "");
+      setSavedSecret(s.planWebhookSecret ?? "");
+      setActivations(s.recentActivations ?? []);
+      if (Array.isArray(p)) setPlans(p.map((pl: { id: number; name: string }) => ({ id: pl.id, name: pl.name })));
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  function generateSecret() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const arr = Array.from({ length: 40 }, () => chars[Math.floor(Math.random() * chars.length)]);
+    setSecret(arr.join(""));
+  }
+
+  async function saveSecret() {
+    setSaving(true);
+    await fetch("/api/dev/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ planWebhookSecret: secret }),
+    });
+    setSavedSecret(secret);
+    setSaving(false);
+  }
+
+  function copy(text: string, key: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  async function testWebhook() {
+    if (!testEmail || !testPlanId) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/webhook/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: testEmail, planId: Number(testPlanId), secret: savedSecret }),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        setTestResult({ ok: true, msg: `Plano "${d.plan?.name}" ativado para ${d.user?.name}. Expira em ${new Date(d.planExpiresAt).toLocaleDateString("pt-BR")}.` });
+        // Recarrega ativações
+        const s = await fetch("/api/dev/settings").then(r => r.json());
+        setActivations(s.recentActivations ?? []);
+      } else {
+        setTestResult({ ok: false, msg: d.error ?? "Erro desconhecido." });
+      }
+    } catch {
+      setTestResult({ ok: false, msg: "Falha na conexão." });
+    }
+    setTesting(false);
+  }
+
+  const CopyBtn = ({ text, k }: { text: string; k: string }) => (
+    <button onClick={() => copy(text, k)} style={{
+      padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+      fontFamily: "inherit", cursor: "pointer", flexShrink: 0,
+      background: copied === k ? "rgba(34,197,94,.15)" : "rgba(255,255,255,.07)",
+      border: copied === k ? "1px solid rgba(34,197,94,.3)" : "1px solid rgba(255,255,255,.1)",
+      color: copied === k ? "#4ade80" : "rgba(255,255,255,.5)",
+      transition: "all .2s",
+    }}>
+      {copied === k ? "Copiado!" : "Copiar"}
+    </button>
+  );
+
+  const sectionTitle = (t: string) => (
+    <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc", marginBottom: 14 }}>{t}</div>
+  );
+
+  const box = (children: React.ReactNode, extra?: React.CSSProperties) => (
+    <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,.07)", borderRadius: 14, padding: "22px 24px", ...extra }}>
+      {children}
+    </div>
+  );
+
+  if (loading) return <div style={{ color: "rgba(255,255,255,.3)", padding: 40, textAlign: "center" }}>Carregando...</div>;
+
+  const webhookUrl = `${baseUrl}/api/webhook/plan`;
+  const payloadExample = JSON.stringify({ email: "cliente@email.com", planId: 1, secret: savedSecret || "SEU_SECRET" }, null, 2);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 780 }}>
+
+      {/* URL do Webhook */}
+      {box(<>
+        {sectionTitle("URL do Webhook")}
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,.45)", marginBottom: 14, lineHeight: 1.6 }}>
+          Configure essa URL na sua plataforma de pagamento (Hotmart, Kiwify, PerfectPay, etc.)
+          para que o plano seja liberado automaticamente após a compra.
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <code style={{
+            flex: 1, padding: "10px 14px", background: "rgba(255,255,255,.04)",
+            border: "1px solid rgba(255,255,255,.1)", borderRadius: 9,
+            fontSize: 13, color: "#818cf8", fontFamily: "monospace", wordBreak: "break-all",
+          }}>
+            {webhookUrl}
+          </code>
+          <CopyBtn text={webhookUrl} k="url" />
+        </div>
+      </>)}
+
+      {/* Secret */}
+      {box(<>
+        {sectionTitle("Secret de Autenticação")}
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,.45)", marginBottom: 14, lineHeight: 1.6 }}>
+          O secret garante que só a sua plataforma de pagamento consegue ativar planos.
+          Se estiver vazio, o webhook aceita qualquer requisição (não recomendado).
+        </p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <input
+            value={secret}
+            onChange={e => setSecret(e.target.value)}
+            placeholder="Cole ou gere um secret seguro..."
+            style={{ ...inputSt, fontFamily: "monospace", fontSize: 13 }}
+          />
+          <CopyBtn text={secret} k="secret" />
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          <button onClick={generateSecret} style={{
+            padding: "8px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+            fontFamily: "inherit", cursor: "pointer",
+            background: "rgba(99,102,241,.1)", border: "1px solid rgba(99,102,241,.25)", color: "#818cf8",
+          }}>
+            Gerar novo secret
+          </button>
+          <button onClick={saveSecret} disabled={saving || secret === savedSecret} style={{
+            ...btnPrimary, padding: "8px 20px", fontSize: 12,
+            opacity: saving || secret === savedSecret ? 0.5 : 1,
+            cursor: saving || secret === savedSecret ? "not-allowed" : "pointer",
+          }}>
+            {saving ? "Salvando..." : secret === savedSecret ? "Salvo" : "Salvar secret"}
+          </button>
+        </div>
+        {savedSecret && (
+          <div style={{ marginTop: 12, padding: "8px 12px", background: "rgba(34,197,94,.06)", border: "1px solid rgba(34,197,94,.15)", borderRadius: 8, fontSize: 12, color: "#4ade80" }}>
+            Secret ativo configurado
+          </div>
+        )}
+        {!savedSecret && (
+          <div style={{ marginTop: 12, padding: "8px 12px", background: "rgba(245,158,11,.06)", border: "1px solid rgba(245,158,11,.2)", borderRadius: 8, fontSize: 12, color: "#f59e0b" }}>
+            Nenhum secret configurado — o webhook está aberto para qualquer requisição.
+          </div>
+        )}
+      </>)}
+
+      {/* Formato do Payload */}
+      {box(<>
+        {sectionTitle("Formato do Payload (POST JSON)")}
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,.45)", marginBottom: 14, lineHeight: 1.6 }}>
+          A plataforma de pagamento deve enviar um POST com este JSON. O <code style={{ color: "#818cf8", background: "rgba(99,102,241,.1)", padding: "1px 6px", borderRadius: 4 }}>planId</code> corresponde ao ID do plano cadastrado no painel.
+        </p>
+        <div style={{ position: "relative" }}>
+          <pre style={{
+            padding: "16px 18px", background: "rgba(0,0,0,.3)",
+            border: "1px solid rgba(255,255,255,.08)", borderRadius: 10,
+            fontSize: 13, color: "#94a3b8", fontFamily: "monospace",
+            lineHeight: 1.7, overflowX: "auto", margin: 0,
+          }}>
+            {payloadExample}
+          </pre>
+          <div style={{ position: "absolute", top: 10, right: 10 }}>
+            <CopyBtn text={payloadExample} k="payload" />
+          </div>
+        </div>
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,.35)", lineHeight: 1.6 }}>
+            <strong style={{ color: "rgba(255,255,255,.6)" }}>email</strong> — e-mail do cliente cadastrado na plataforma<br />
+            <strong style={{ color: "rgba(255,255,255,.6)" }}>planId</strong> — ID do plano{plans.length > 0 && ` (${plans.map(p => `${p.id}=${p.name}`).join(", ")})`}<br />
+            <strong style={{ color: "rgba(255,255,255,.6)" }}>secret</strong> — deve bater com o secret configurado acima
+          </div>
+        </div>
+      </>)}
+
+      {/* Testar Webhook */}
+      {box(<>
+        {sectionTitle("Testar Ativação Manual")}
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,.45)", marginBottom: 16, lineHeight: 1.6 }}>
+          Simula uma ativação de plano como se fosse uma notificação da plataforma de pagamento.
+          Use para testar antes de configurar em produção.
+        </p>
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.4)", marginBottom: 6, letterSpacing: ".06em", textTransform: "uppercase" }}>E-mail do cliente</label>
+            <input value={testEmail} onChange={e => setTestEmail(e.target.value)}
+              placeholder="cliente@email.com" style={inputSt} />
+          </div>
+          <div style={{ width: 200, flexShrink: 0 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.4)", marginBottom: 6, letterSpacing: ".06em", textTransform: "uppercase" }}>Plano</label>
+            <select value={testPlanId} onChange={e => setTestPlanId(e.target.value)}
+              style={{ ...inputSt, appearance: "none" as const }}>
+              <option value="">Selecionar...</option>
+              {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+        <button onClick={testWebhook} disabled={testing || !testEmail || !testPlanId} style={{
+          ...btnPrimary, opacity: testing || !testEmail || !testPlanId ? 0.5 : 1,
+          cursor: testing || !testEmail || !testPlanId ? "not-allowed" : "pointer",
+        }}>
+          {testing ? "Enviando..." : "Ativar plano agora"}
+        </button>
+        {testResult && (
+          <div style={{
+            marginTop: 14, padding: "12px 16px", borderRadius: 10, fontSize: 13,
+            background: testResult.ok ? "rgba(34,197,94,.08)" : "rgba(239,68,68,.08)",
+            border: testResult.ok ? "1px solid rgba(34,197,94,.2)" : "1px solid rgba(239,68,68,.2)",
+            color: testResult.ok ? "#4ade80" : "#f87171",
+          }}>
+            {testResult.msg}
+          </div>
+        )}
+      </>)}
+
+      {/* Ativações Recentes */}
+      {box(<>
+        {sectionTitle("Últimas Ativações de Plano")}
+        {activations.length === 0 ? (
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,.25)" }}>Nenhuma ativação ainda.</p>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+                <Th>Cliente</Th><Th>Plano</Th><Th>Expira em</Th><Th>Ativado em</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {activations.map(a => (
+                <tr key={a.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                  <td style={{ padding: "11px 16px" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{a.name}</div>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,.35)" }}>{a.email}</div>
+                  </td>
+                  <td style={{ padding: "11px 16px", fontSize: 13 }}>{a.plan?.name ?? "—"}</td>
+                  <td style={{ padding: "11px 16px", fontSize: 13, color: new Date(a.planExpiresAt) > new Date() ? "#4ade80" : "#f87171" }}>
+                    {fmt(a.planExpiresAt)}
+                  </td>
+                  <td style={{ padding: "11px 16px", fontSize: 12, color: "rgba(255,255,255,.35)" }}>
+                    {fmtDT(a.updatedAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </>)}
+    </div>
+  );
+}
+
 // ── Nav config ────────────────────────────────────────────────────────────────
 const NAV: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "overview",  label: "Overview",   icon: <IcoGrid /> },
@@ -856,6 +1146,7 @@ const NAV: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "campanhas", label: "Campanhas",  icon: <IcoMega /> },
   { key: "logs",      label: "Logs",       icon: <IcoList /> },
   { key: "planos",    label: "Planos",     icon: <IcoCard /> },
+  { key: "webhook",   label: "Webhook",    icon: <IcoWebhook /> },
 ];
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
@@ -1044,6 +1335,11 @@ export default function DevPage() {
                   Configure os planos disponíveis para os clientes
                 </p>
               )}
+              {tab === "webhook" && (
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,.35)", marginTop: 4 }}>
+                  Configure a integração com sua plataforma de pagamento para ativar planos automaticamente
+                </p>
+              )}
             </div>
 
             {tab === "overview"  && <OverviewTab stats={stats} />}
@@ -1051,6 +1347,7 @@ export default function DevPage() {
             {tab === "campanhas" && <CampanhasTab campaigns={campaigns} />}
             {tab === "logs"      && <LogsTab />}
             {tab === "planos"    && <PlanosTab plans={plans} onReload={() => { loadPlans(); loadStats(); }} />}
+            {tab === "webhook"   && <WebhookTab />}
           </main>
         </div>
       </div>

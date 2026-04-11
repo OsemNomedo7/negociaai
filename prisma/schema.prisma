@@ -164,3 +164,9 @@ model Admin {
   password  String
   createdAt DateTime @default(now())
 }
+
+model DevSettings {
+  id                Int      @id @default(1)
+  planWebhookSecret String   @default("")
+  updatedAt         DateTime @updatedAt
+}

@@ -132,27 +132,8 @@ export default function DevLoginPage() {
 
           {/* Logo e badge */}
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ position: "relative", display: "inline-block", marginBottom: 20 }}>
-              {/* Anel girando atrás da logo */}
-              <div style={{
-                position: "absolute", inset: -12,
-                borderRadius: "50%",
-                border: "1.5px dashed rgba(239,68,68,.2)",
-                animation: "spin-slow 20s linear infinite",
-              }} />
-              <div style={{
-                width: 88, height: 88,
-                background: "linear-gradient(135deg, rgba(239,68,68,.15), rgba(185,28,28,.08))",
-                border: "1.5px solid rgba(239,68,68,.2)",
-                borderRadius: 24,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                backdropFilter: "blur(8px)",
-                boxShadow: "0 0 40px rgba(239,68,68,.12), inset 0 1px 0 rgba(255,255,255,.06)",
-              }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo.png" alt="Caos Dívidas" style={{ height: 52, width: 52, objectFit: "contain", filter: "drop-shadow(0 0 12px rgba(239,68,68,.5))" }} />
-              </div>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Caos Dívidas" style={{ height: 100, objectFit: "contain", marginBottom: 20, filter: "drop-shadow(0 0 16px rgba(239,68,68,.4))" }} />
 
             <div style={{ marginBottom: 10 }}>
               <span style={{ fontSize: 22, fontWeight: 800, color: "#f8fafc", letterSpacing: "-.02em" }}>Caos</span>

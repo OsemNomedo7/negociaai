@@ -28,14 +28,19 @@ export default function LogsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const p = new URLSearchParams({ page: String(page), limit: "50" });
-    if (event) p.set("event", event);
-    const res = await fetch(`/api/admin/logs?${p}`);
-    if (res.status === 401) { router.push("/admin/login"); return; }
-    const data = await res.json();
-    setLogs(data.logs || []); setTotal(data.total || 0);
-    setSelected(new Set());
-    setLoading(false);
+    try {
+      const p = new URLSearchParams({ page: String(page), limit: "50" });
+      if (event) p.set("event", event);
+      const res = await fetch(`/api/admin/logs?${p}`);
+      if (res.status === 401) { router.push("/admin/login"); return; }
+      const data = await res.json();
+      setLogs(data.logs || []); setTotal(data.total || 0);
+      setSelected(new Set());
+    } catch {
+      setLogs([]); setTotal(0);
+    } finally {
+      setLoading(false);
+    }
   }, [page, event, router]);
 
   useEffect(() => { load(); }, [load]);

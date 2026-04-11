@@ -168,9 +168,9 @@ function Countdown() {
 }
 
 /* ─── Chat Widget ────────────────────────────────────── */
-function ChatWidget({ visitorId, primary, secondary, companyName, companyLogo, pc }: {
+function ChatWidget({ visitorId, primary, secondary, companyName, companyLogo, pc, campaignId }: {
   visitorId: string; primary: string; secondary: string;
-  companyName: string; companyLogo: string; pc: PageContent;
+  companyName: string; companyLogo: string; pc: PageContent; campaignId: number;
 }) {
   const [open, setOpen] = useState(false);
   const [sessionId, setSessionId] = useState<number | null>(null);
@@ -192,7 +192,7 @@ function ChatWidget({ visitorId, primary, secondary, companyName, companyLogo, p
     fetch("/api/chat/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitorId }),
+      body: JSON.stringify({ visitorId, campaignId }),
     }).then(r => r.json()).then(d => {
       if (d.id) { setSessionId(d.id); if (d.status === "CLOSED") setClosed(true); }
     }).catch(() => {});
@@ -1084,6 +1084,7 @@ export default function CampaignPage({ params }: { params: { slug: string } }) {
         companyName={campaign.companyName}
         companyLogo={campaign.companyLogo}
         pc={pc}
+        campaignId={campaign.id}
       />
     </>
   );

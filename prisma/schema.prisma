@@ -101,8 +101,9 @@ model Campaign {
   pageContent      String   @default("{}")
   colorScheme      String   @default("{}")
 
-  debtors  Debtor[]
-  logs     Log[]
+  debtors      Debtor[]
+  logs         Log[]
+  chatSessions ChatSession[]
 }
 
 model Settings {
@@ -134,18 +135,20 @@ model Settings {
 }
 
 model ChatSession {
-  id        Int           @id @default(autoincrement())
-  visitorId String        @unique
-  name      String?
-  cpf       String?
-  ip        String?
-  city      String?
-  state     String?
-  consulted Boolean       @default(false)
-  status    String        @default("OPEN")
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  messages  ChatMessage[]
+  id         Int           @id @default(autoincrement())
+  visitorId  String        @unique
+  name       String?
+  cpf        String?
+  ip         String?
+  city       String?
+  state      String?
+  consulted  Boolean       @default(false)
+  status     String        @default("OPEN")
+  campaignId Int?
+  campaign   Campaign?     @relation(fields: [campaignId], references: [id])
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  messages   ChatMessage[]
 }
 
 model ChatMessage {

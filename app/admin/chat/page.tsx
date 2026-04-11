@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
+interface Campaign { id: number; name: string; slug: string; }
+
 interface ChatSession {
   id: number;
   visitorId: string;
@@ -18,6 +20,7 @@ interface ChatSession {
   lastMsg: string | null;
   lastMsgAt: string | null;
   unread: number;
+  campaign: Campaign | null;
 }
 
 interface ChatMessage {
@@ -40,6 +43,7 @@ export default function ChatAdminPage() {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | "all">("all");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -57,19 +61,16 @@ export default function ChatAdminPage() {
     const data = await res.json();
     setMessages(data.messages || []);
     setActiveSession(data.session);
-    // refresh session list to clear unread badge
     setSessions(prev => prev.map(s => s.id === id ? { ...s, unread: 0 } : s));
   }, []);
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
 
-  // Poll sessions every 5s
   useEffect(() => {
     const id = setInterval(loadSessions, 5000);
     return () => clearInterval(id);
   }, [loadSessions]);
 
-  // Poll messages when a session is active
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (!activeId) return;
@@ -115,7 +116,16 @@ export default function ChatAdminPage() {
     if (activeSession) setActiveSession({ ...activeSession, status: "CLOSED" });
   }
 
-  const totalUnread = sessions.reduce((acc, s) => acc + (s.unread || 0), 0);
+  // Campanhas únicas para o filtro
+  const campaigns = Array.from(
+    new Map(sessions.filter(s => s.campaign).map(s => [s.campaign!.id, s.campaign!])).values()
+  );
+
+  const filtered = selectedCampaignId === "all"
+    ? sessions
+    : sessions.filter(s => s.campaign?.id === selectedCampaignId);
+
+  const totalUnread = filtered.reduce((acc, s) => acc + (s.unread || 0), 0);
 
   return (
     <div className="flex h-[calc(100vh-80px)] gap-0 animate-fade-in overflow-hidden rounded-2xl border"
@@ -124,16 +134,54 @@ export default function ChatAdminPage() {
       {/* ── Session list ── */}
       <div className="w-80 flex-shrink-0 flex flex-col border-r" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <div className="px-4 py-4 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="font-black text-base" style={{ color: "var(--text)" }}>Chats de suporte</h2>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{sessions.length} conversas</p>
+              <h2 className="font-black text-base" style={{ color: "var(--text)" }}>Chats</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{filtered.length} conversa{filtered.length !== 1 ? "s" : ""}</p>
             </div>
             {totalUnread > 0 && (
               <span className="text-xs font-black px-2 py-1 rounded-full text-white"
                 style={{ background: "#ef4444" }}>{totalUnread}</span>
             )}
           </div>
+
+          {/* Filtro por campanha */}
+          {campaigns.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 2 }}>Filtrar por campanha</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                <button
+                  onClick={() => setSelectedCampaignId("all")}
+                  style={{
+                    fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                    border: selectedCampaignId === "all" ? "1px solid rgba(99,102,241,.5)" : "1px solid var(--border)",
+                    background: selectedCampaignId === "all" ? "rgba(99,102,241,.1)" : "transparent",
+                    color: selectedCampaignId === "all" ? "#818cf8" : "var(--text-muted)",
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}>
+                  Todas ({sessions.length})
+                </button>
+                {campaigns.map(c => {
+                  const count = sessions.filter(s => s.campaign?.id === c.id).length;
+                  const unread = sessions.filter(s => s.campaign?.id === c.id).reduce((a, s) => a + s.unread, 0);
+                  return (
+                    <button key={c.id}
+                      onClick={() => setSelectedCampaignId(c.id)}
+                      style={{
+                        fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                        border: selectedCampaignId === c.id ? "1px solid rgba(99,102,241,.5)" : "1px solid var(--border)",
+                        background: selectedCampaignId === c.id ? "rgba(99,102,241,.1)" : "transparent",
+                        color: selectedCampaignId === c.id ? "#818cf8" : "var(--text-muted)",
+                        cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5,
+                      }}>
+                      {c.name} ({count})
+                      {unread > 0 && <span style={{ background: "#ef4444", color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -141,12 +189,12 @@ export default function ChatAdminPage() {
             <div className="flex items-center justify-center py-16">
               <div className="w-7 h-7 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
             </div>
-          ) : sessions.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-3xl mb-3">💬</p>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Nenhuma conversa ainda</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Nenhuma conversa</p>
             </div>
-          ) : sessions.map(s => (
+          ) : filtered.map(s => (
             <button key={s.id} onClick={() => openSession(s.id)}
               className="w-full text-left px-4 py-3.5 border-b transition-all hover:bg-indigo-50 dark:hover:bg-white/5"
               style={{
@@ -177,7 +225,14 @@ export default function ChatAdminPage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Badge da campanha */}
+                {s.campaign && selectedCampaignId === "all" && (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
+                    style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px solid rgba(99,102,241,.2)" }}>
+                    {s.campaign.name}
+                  </span>
+                )}
                 {!s.consulted && (
                   <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
                     style={{ background: "rgba(245,158,11,0.12)", color: "#d97706" }}>Sem consulta</span>
@@ -206,15 +261,21 @@ export default function ChatAdminPage() {
         </div>
       ) : (
         <div className="flex-1 flex flex-col" style={{ background: "var(--bg)" }}>
-          {/* Chat header */}
           {activeSession && (
             <div className="px-5 py-3.5 border-b flex items-center justify-between"
               style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-bold text-sm" style={{ color: "var(--text)" }}>
                     {activeSession.name || `Visitante #${activeSession.id}`}
                   </p>
+                  {/* Campanha no header do chat */}
+                  {activeSession.campaign && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                      style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px solid rgba(99,102,241,.2)" }}>
+                      📢 {activeSession.campaign.name}
+                    </span>
+                  )}
                   {activeSession.consulted ? (
                     <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
                       style={{ background: "rgba(16,185,129,0.1)", color: "#10b981" }}>Consultou</span>
@@ -242,7 +303,6 @@ export default function ChatAdminPage() {
             </div>
           )}
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3">
             {messages.length === 0 && (
               <div className="text-center py-10">
@@ -265,7 +325,6 @@ export default function ChatAdminPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Reply input */}
           <div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             {activeSession?.status === "CLOSED" ? (
               <p className="text-center text-sm py-2" style={{ color: "var(--text-muted)" }}>Chat encerrado</p>

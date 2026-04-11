@@ -687,11 +687,17 @@ function LogsTab() {
 
   const load = useCallback(async (p: number, ev: string) => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(p) });
-    if (ev) params.set("event", ev);
-    const d = await fetch(`/api/dev/logs?${params}`).then(r => r.json());
-    setLogs(d.logs ?? []); setPage(d.page ?? 1); setPages(d.pages ?? 1); setTotal(d.total ?? 0);
-    setLoading(false);
+    try {
+      const params = new URLSearchParams({ page: String(p) });
+      if (ev) params.set("event", ev);
+      const r = await fetch(`/api/dev/logs?${params}`);
+      const d = await r.json();
+      setLogs(d.logs ?? []); setPage(d.page ?? 1); setPages(d.pages ?? 1); setTotal(d.total ?? 0);
+    } catch {
+      setLogs([]); setTotal(0);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(1, event); }, [load, event]);

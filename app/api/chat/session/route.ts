@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body?.visitorId) return NextResponse.json({ error: "visitorId obrigatório" }, { status: 400 });
 
-  const { visitorId } = body as { visitorId: string };
+  const { visitorId, campaignId } = body as { visitorId: string; campaignId?: number };
 
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -19,7 +19,13 @@ export async function POST(req: NextRequest) {
   const geo = await getGeo(ip);
 
   const created = await prisma.chatSession.create({
-    data: { visitorId, ip: geo.resolvedIp, city: geo.city, state: geo.state },
+    data: {
+      visitorId,
+      ip: geo.resolvedIp,
+      city: geo.city,
+      state: geo.state,
+      ...(campaignId ? { campaignId } : {}),
+    },
   });
 
   return NextResponse.json({ id: created.id, name: created.name, cpf: created.cpf, status: created.status, consulted: created.consulted });

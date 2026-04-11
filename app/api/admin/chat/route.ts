@@ -7,8 +7,12 @@ export async function GET(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
 
   const sessions = await prisma.chatSession.findMany({
+    where: {
+      campaign: { userId: admin.userId as number },
+    },
     orderBy: { updatedAt: "desc" },
     include: {
+      campaign: { select: { id: true, name: true, slug: true } },
       messages: {
         orderBy: { id: "desc" },
         take: 1,
@@ -35,6 +39,7 @@ export async function GET(req: NextRequest) {
     lastMsg: s.messages[0]?.content ?? null,
     lastMsgAt: s.messages[0]?.createdAt ?? null,
     unread: s._count.messages,
+    campaign: s.campaign ?? null,
   }));
 
   return NextResponse.json({ sessions: result });

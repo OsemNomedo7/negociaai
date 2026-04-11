@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type Tab = "overview" | "clientes" | "campanhas" | "logs" | "planos" | "webhook";
+type Tab = "overview" | "clientes" | "campanhas" | "logs" | "planos" | "webhook" | "credenciais";
 
 interface DayStats { label: string; consultas: number; pagamentos: number; }
 
@@ -1079,6 +1079,100 @@ function WebhookTab() {
   );
 }
 
+// ── Credenciais ───────────────────────────────────────────────────────────────
+function CredenciaisTab() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+    if (newPassword && newPassword !== confirmPassword) {
+      setMsg({ type: "err", text: "As senhas não coincidem." });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/dev/credentials", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newUsername: newUsername || undefined, newPassword: newPassword || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg({ type: "err", text: data.error }); return; }
+      setMsg({ type: "ok", text: data.message });
+      setCurrentPassword(""); setNewUsername(""); setNewPassword(""); setConfirmPassword("");
+    } catch { setMsg({ type: "err", text: "Falha na conexão." }); }
+    finally { setLoading(false); }
+  }
+
+  const field = (label: string, value: string, set: (v: string) => void, placeholder?: string) => (
+    <div>
+      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.35)", marginBottom: 7, letterSpacing: ".07em", textTransform: "uppercase" }}>{label}</label>
+      <input type="password" value={value} onChange={e => set(e.target.value)} placeholder={placeholder ?? "••••••••"} style={inputSt} />
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <SectionCard>
+        <CardHeader title="Alterar Credenciais" sub="Atualize o usuário e/ou senha de acesso ao painel DEV" />
+        <div style={{ padding: 24 }}>
+          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* Senha atual */}
+            <div style={{ padding: "14px 16px", background: "rgba(239,68,68,.05)", border: "1px solid rgba(239,68,68,.12)", borderRadius: 12, marginBottom: 4 }}>
+              <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,.4)", lineHeight: 1.5 }}>
+                A senha atual é necessária para confirmar qualquer alteração.
+              </p>
+            </div>
+            {field("Senha atual *", currentPassword, setCurrentPassword, "Sua senha atual")}
+
+            <div style={{ height: 1, background: "rgba(255,255,255,.05)", margin: "4px 0" }} />
+
+            {/* Novo usuário */}
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.35)", marginBottom: 7, letterSpacing: ".07em", textTransform: "uppercase" }}>Novo usuário <span style={{ color: "rgba(255,255,255,.2)", fontWeight: 400 }}>(opcional)</span></label>
+              <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)} placeholder="ex: admin" style={inputSt} autoComplete="off" />
+            </div>
+
+            {/* Nova senha */}
+            {field("Nova senha (opcional)", newPassword, setNewPassword, "Mínimo 6 caracteres")}
+            {field("Confirmar nova senha", confirmPassword, setConfirmPassword, "Repita a nova senha")}
+
+            {msg && (
+              <div style={{
+                padding: "12px 14px", borderRadius: 10,
+                background: msg.type === "ok" ? "rgba(34,197,94,.07)" : "rgba(239,68,68,.07)",
+                border: `1px solid ${msg.type === "ok" ? "rgba(34,197,94,.2)" : "rgba(239,68,68,.2)"}`,
+                color: msg.type === "ok" ? "#4ade80" : "#f87171",
+                fontSize: 13, display: "flex", alignItems: "center", gap: 8,
+              }}>
+                <span>{msg.type === "ok" ? "✓" : "⚠"}</span>
+                {msg.text}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading || !currentPassword} style={{
+              ...btnPrimary,
+              background: "linear-gradient(135deg,#ef4444,#b91c1c)",
+              boxShadow: "0 4px 20px rgba(239,68,68,.25)",
+              opacity: (!currentPassword || loading) ? .5 : 1,
+              cursor: (!currentPassword || loading) ? "not-allowed" : "pointer",
+            }}>
+              {loading ? "Salvando..." : "Salvar alterações"}
+            </button>
+          </form>
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
 // ── Nav ───────────────────────────────────────────────────────────────────────
 const NAV: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "overview", label: "Overview", icon: <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg> },
@@ -1087,6 +1181,7 @@ const NAV: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "logs", label: "Logs", icon: <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg> },
   { key: "planos", label: "Planos", icon: <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg> },
   { key: "webhook", label: "Webhook", icon: <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg> },
+  { key: "credenciais", label: "Credenciais", icon: <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" /></svg> },
 ];
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
@@ -1147,6 +1242,7 @@ export default function DevPage() {
     planos: "Configure os planos disponíveis para os clientes",
     webhook: "Integração com plataforma de pagamento para ativação automática",
     logs: "Histórico de eventos da plataforma",
+    credenciais: "Altere o usuário e a senha de acesso ao painel DEV",
   };
 
   return (
@@ -1256,7 +1352,8 @@ export default function DevPage() {
             {tab === "campanhas" && <CampanhasTab campaigns={campaigns} />}
             {tab === "logs"      && <LogsTab />}
             {tab === "planos"    && <PlanosTab plans={plans} onReload={() => { loadPlans(); loadStats(); }} />}
-            {tab === "webhook"   && <WebhookTab />}
+            {tab === "webhook"      && <WebhookTab />}
+            {tab === "credenciais"  && <CredenciaisTab />}
           </main>
         </div>
       </div>

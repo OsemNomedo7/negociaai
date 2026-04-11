@@ -66,7 +66,7 @@ const fmt = (v: string) => new Date(v).toLocaleDateString("pt-BR");
 const fmtDT = (v: string) =>
   new Date(v).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 const durationLabel = (d: number) =>
-  d === 1 ? "Diário" : d === 7 ? "Semanal" : d === 30 ? "Mensal" : `${d}d`;
+  d === 0 ? "Sem limite" : d === 1 ? "Diário" : d === 7 ? "Semanal" : d === 30 ? "Mensal" : `${d}d`;
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const daysLeft = (exp: string | null) => {
   if (!exp) return null;
@@ -801,9 +801,9 @@ function PlanosTab({ plans, onReload }: { plans: Plan[]; onReload: () => void })
               {brl(plan.price)}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 14, fontSize: 13, color: "rgba(255,255,255,.4)" }}>
-              <span>{plan.maxCampaigns} campanha{plan.maxCampaigns !== 1 ? "s" : ""}</span>
-              <span>{plan.maxDebtors.toLocaleString("pt-BR")} devedores</span>
-              <span>{plan.durationDays} dias de acesso</span>
+              <span>{plan.maxCampaigns === 0 ? "Campanhas ilimitadas" : `${plan.maxCampaigns} campanha${plan.maxCampaigns !== 1 ? "s" : ""}`}</span>
+              <span>{plan.maxDebtors === 0 ? "Devedores ilimitados" : `${plan.maxDebtors.toLocaleString("pt-BR")} devedores`}</span>
+              <span>{plan.durationDays === 0 ? "Acesso sem limite de prazo" : `${plan.durationDays} dias de acesso`}</span>
             </div>
             {plan._count !== undefined && (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 7, background: "rgba(99,102,241,.1)", border: "1px solid rgba(99,102,241,.2)", fontSize: 11, fontWeight: 600, color: "#818cf8", marginBottom: 16 }}>
@@ -828,9 +828,9 @@ function PlanosTab({ plans, onReload }: { plans: Plan[]; onReload: () => void })
               {([
                 { label: "Nome", key: "name", type: "text" },
                 { label: "Preço (R$)", key: "price", type: "number" },
-                { label: "Duração (dias)", key: "durationDays", type: "number" },
-                { label: "Máx. campanhas", key: "maxCampaigns", type: "number" },
-                { label: "Máx. devedores", key: "maxDebtors", type: "number" },
+                { label: "Duração (dias) — 0 = sem limite", key: "durationDays", type: "number" },
+                { label: "Máx. campanhas — 0 = sem limite", key: "maxCampaigns", type: "number" },
+                { label: "Máx. devedores — 0 = sem limite", key: "maxDebtors", type: "number" },
                 { label: "URL de checkout", key: "checkoutUrl", type: "text" },
               ] as { label: string; key: string; type: string }[]).map(f => (
                 <div key={f.key}>

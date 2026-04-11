@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   // Verifica limite de campanhas do plano
   const user = await prisma.user.findUnique({ where: { id: userId }, include: { plan: true } });
-  if (user?.plan) {
+  if (user?.plan && user.plan.maxCampaigns > 0) {
     const count = await prisma.campaign.count({ where: { userId } });
     if (count >= user.plan.maxCampaigns)
       return NextResponse.json({ error: `Limite de ${user.plan.maxCampaigns} campanhas atingido no seu plano.` }, { status: 403 });

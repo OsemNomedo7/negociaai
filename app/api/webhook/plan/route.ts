@@ -91,9 +91,13 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: `Usuário "${email}" não encontrado.` }, { status: 404 });
 
   const now = new Date();
-  // Se já tem plano ativo, soma os dias ao prazo atual (evita perda de dias)
-  const base = user.planExpiresAt && user.planExpiresAt > now ? user.planExpiresAt : now;
-  const planExpiresAt = new Date(base.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
+  // durationDays === 0 significa acesso sem limite de prazo
+  const planExpiresAt = plan.durationDays === 0
+    ? new Date("2099-12-31T23:59:59Z")
+    : (() => {
+        const base = user.planExpiresAt && user.planExpiresAt > now ? user.planExpiresAt : now;
+        return new Date(base.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
+      })();
 
   await prisma.user.update({
     where: { id: user.id },

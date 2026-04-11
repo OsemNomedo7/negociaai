@@ -24,9 +24,9 @@ export async function POST(req: NextRequest) {
     data: {
       name: body.name || "Novo Plano",
       price: Number(body.price) || 0,
-      durationDays: Number(body.durationDays) || 30,
-      maxCampaigns: Number(body.maxCampaigns) || 3,
-      maxDebtors: Number(body.maxDebtors) || 1000,
+      durationDays: body.durationDays !== undefined ? Number(body.durationDays) : 30,
+      maxCampaigns: body.maxCampaigns !== undefined ? Number(body.maxCampaigns) : 3,
+      maxDebtors: body.maxDebtors !== undefined ? Number(body.maxDebtors) : 1000,
       checkoutUrl: body.checkoutUrl || "",
       active: body.active ?? true,
     },

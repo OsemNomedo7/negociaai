@@ -15,49 +15,78 @@ export async function middleware(req: NextRequest) {
     !hostname.includes("localhost") &&
     !hostname.endsWith(".vercel.app");
 
-  if (isCustomDomain && !pathname.startsWith("/api/") && !pathname.startsWith("/_next/")) {
+  if (
+    isCustomDomain &&
+    !pathname.startsWith("/api/") &&
+    !pathname.startsWith("/_next/")
+  ) {
     try {
-      const res = await fetch(`${appUrl}/api/resolve-domain?domain=${hostname}`);
+      const res = await fetch(
+        `${appUrl}/api/resolve-domain?domain=${hostname}`
+      );
       if (res.ok) {
-        const { slug } = await res.json() as { slug: string | null };
+        const { slug } = (await res.json()) as { slug: string | null };
         if (slug) {
           const url = req.nextUrl.clone();
           url.pathname = `/c/${slug}`;
           return NextResponse.rewrite(url);
         }
       }
-    } catch { /* fallthrough → 404 */ }
+    } catch {}
     return new NextResponse("Not Found", { status: 404 });
   }
 
   // ── DEV panel protection (/dev/*) ───────────────────────────────────────
   if (pathname.startsWith("/dev") && pathname !== "/dev/login") {
     const token = req.cookies.get("admin_token")?.value;
-    if (!token) return NextResponse.redirect(new URL("/dev/login", req.url));
-    const payload = await verifyToken(token);
-    if (!payload || payload.role !== "dev") {
-      const res = NextResponse.redirect(new URL("/dev/login", req.url));
-      res.cookies.set("admin_token", "", { maxAge: 0 });
-      return res;
+
+    if (!token) {
+      return NextResponse.redirect(new URL("/dev/login", req.url));
     }
+
+    const payload = await verifyToken(token);
+
+    if (!payload || payload.role !== "dev") {
+      return NextResponse.redirect(new URL("/dev/login", req.url));
+    }
+  }
+
+  // ── ADMIN API protection (/api/admin/*) ─────────────────────────────────
+  if (pathname.startsWith("/api/admin")) {
+    const token = req.cookies.get("tenant_token")?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const payload = await verifyToken(token);
+
+    if (!payload) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    return NextResponse.next();
   }
 
   // ── Tenant panel protection (/admin/*) ──────────────────────────────────
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const token = req.cookies.get("tenant_token")?.value;
-    if (!token) return NextResponse.redirect(new URL("/admin/login", req.url));
+
+    if (!token) {
+      return NextResponse.redirect(new URL("/admin/login", req.url));
+    }
 
     const payload = await verifyToken(token);
+
     if (!payload) {
-      const res = NextResponse.redirect(new URL("/admin/login", req.url));
-      res.cookies.set("tenant_token", "", { maxAge: 0 });
-      return res;
+      return NextResponse.redirect(new URL("/admin/login", req.url));
     }
 
     // Verifica plano ativo (exceto página de planos)
     if (pathname !== "/admin/planos") {
       const exp = payload.planExpiresAt as string | null;
       const planActive = exp && new Date(exp) > new Date();
+
       if (!planActive) {
         return NextResponse.redirect(new URL("/admin/planos", req.url));
       }

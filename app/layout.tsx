@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Caos Dívidas",
-  description: "Quite sua dívida com até 60% de desconto. Consulte agora e recupere seu crédito.",
+  description: "PLATAFORMA DE CRIAÇÃO DE TELAS DE QUITAÇÃO E COBRANÇA DE DIVIDAS",
   icons: { icon: "/logo.png" },
 };
 

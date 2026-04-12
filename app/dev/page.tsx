@@ -812,6 +812,10 @@ function PlanosTab({ plans, onReload }: { plans: Plan[]; onReload: () => void })
               <span>{plan.maxDebtors === 0 ? "Devedores ilimitados" : `${plan.maxDebtors.toLocaleString("pt-BR")} devedores`}</span>
               <span>{plan.durationDays === 0 ? "Acesso sem limite de prazo" : `${plan.durationDays} dias de acesso`}</span>
             </div>
+            <div style={{ padding: "7px 10px", borderRadius: 7, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", marginBottom: 14 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 3 }}>External ID (SigiloPay)</div>
+              <code style={{ fontSize: 12, color: "rgba(255,255,255,.6)", fontFamily: "monospace" }}>plan-{"id" in plan ? plan.id : "?"}</code>
+            </div>
             {plan._count !== undefined && (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 7, background: "rgba(99,102,241,.1)", border: "1px solid rgba(99,102,241,.2)", fontSize: 11, fontWeight: 600, color: "#818cf8", marginBottom: 16 }}>
                 {plan._count.users} assinante{plan._count.users !== 1 ? "s" : ""}

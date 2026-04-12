@@ -19,7 +19,9 @@ function extractEmail(body: Record<string, unknown>): string | null {
 }
 
 // Extrai planId de diferentes formatos
+// Suporta: campo direto, metadata, ou externalId no formato "plan-{id}" (SigiloPay)
 function extractPlanId(body: Record<string, unknown>): number | null {
+  // Tenta campos diretos primeiro
   const candidates = [
     body.planId,
     body.plan_id,
@@ -31,6 +33,18 @@ function extractPlanId(body: Record<string, unknown>): number | null {
     const n = Number(c);
     if (!isNaN(n) && n > 0) return n;
   }
+
+  // Tenta externalId no formato "plan-{id}" (SigiloPay)
+  const externalId =
+    (body.product as Record<string, unknown>)?.externalId ??
+    (body.offer as Record<string, unknown>)?.externalId ??
+    (body.data as Record<string, unknown>)?.externalId ??
+    body.externalId;
+  if (typeof externalId === "string") {
+    const match = externalId.match(/^plan-(\d+)$/i);
+    if (match) return parseInt(match[1]);
+  }
+
   return null;
 }
 

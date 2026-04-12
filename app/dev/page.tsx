@@ -894,14 +894,14 @@ function WebhookTab() {
   const [testPlanId, setTestPlanId] = useState("");
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const [plans, setPlans] = useState<{ id: number; name: string }[]>([]);
+  const [plans, setPlans] = useState<{ id: number; name: string; price: number }[]>([]);
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   useEffect(() => {
     async function load() {
       const [s, p] = await Promise.all([fetch("/api/dev/settings").then(r => r.json()), fetch("/api/dev/plans").then(r => r.json())]);
       setSecret(s.planWebhookSecret ?? ""); setSavedSecret(s.planWebhookSecret ?? ""); setActivations(s.recentActivations ?? []);
-      if (Array.isArray(p)) setPlans(p.map((pl: { id: number; name: string }) => ({ id: pl.id, name: pl.name })));
+      if (Array.isArray(p)) setPlans(p.map((pl: { id: number; name: string; price: number }) => ({ id: pl.id, name: pl.name, price: pl.price })));
       setLoading(false);
     }
     load();
@@ -927,8 +927,17 @@ function WebhookTab() {
   async function testWebhook() {
     if (!testEmail || !testPlanId) return;
     setTesting(true); setTestResult(null);
+    const selectedPlan = plans.find(p => p.id === Number(testPlanId));
     try {
-      const res = await fetch("/api/webhook/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: testEmail, planId: Number(testPlanId), secret: savedSecret }) });
+      // Simula o payload exato que a SigiloPay envia
+      const payload = {
+        event: "TRANSACTION_PAID",
+        token: savedSecret,
+        client: { email: testEmail, name: "Teste Manual" },
+        transaction: { amount: selectedPlan?.price ?? 0, status: "COMPLETED" },
+        orderItems: [{ price: selectedPlan?.price ?? 0, product: { id: "test", name: selectedPlan?.name ?? "" } }],
+      };
+      const res = await fetch("/api/webhook/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const d = await res.json();
       if (res.ok) {
         setTestResult({ ok: true, msg: `Plano "${d.plan?.name}" ativado para ${d.user?.name}. Expira em ${new Date(d.planExpiresAt).toLocaleDateString("pt-BR")}.` });
@@ -956,40 +965,18 @@ function WebhookTab() {
 
       {/* URL */}
       <SectionCard>
-        <CardHeader title="URL do Webhook" sub="Configure na sua plataforma de pagamento (SigiloPay, Hotmart, Kiwify...)" />
-        <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <CardHeader title="URL do Webhook" sub="Cole esta URL no campo 'URL alvo do disparo' na SigiloPay. Selecione os 3 planos e o evento Transação paga." />
+        <div style={{ padding: "20px 22px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <code style={{ flex: 1, padding: "10px 14px", background: "rgba(99,102,241,.07)", border: "1px solid rgba(99,102,241,.2)", borderRadius: 10, fontSize: 13, color: "#818cf8", fontFamily: "monospace", wordBreak: "break-all" }}>{webhookUrl}</code>
             <CopyBtn text={webhookUrl} k="url" />
           </div>
-
-          {plans.length > 0 && (
-            <>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.3)", letterSpacing: ".07em", textTransform: "uppercase" }}>URLs por plano — use estas na SigiloPay</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {plans.map((p, i) => {
-                  const planUrl = `${webhookUrl}?planId=${p.id}${savedSecret ? `&secret=${savedSecret}` : ""}`;
-                  return (
-                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(99,102,241,.15)", border: "1px solid rgba(99,102,241,.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#818cf8", flexShrink: 0 }}>{i + 1}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,.35)", marginBottom: 3 }}>{p.name}</div>
-                        <code style={{ display: "block", padding: "8px 12px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 8, fontSize: 12, color: "#94a3b8", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{planUrl}</code>
-                      </div>
-                      <CopyBtn text={planUrl} k={`url-${p.id}`} />
-                    </div>
-                  );
-                })}
-              </div>
-              {!savedSecret && <div style={{ fontSize: 12, color: "#f59e0b", background: "rgba(245,158,11,.06)", border: "1px solid rgba(245,158,11,.2)", borderRadius: 8, padding: "8px 12px" }}>Configure o secret abaixo para que ele apareça nas URLs.</div>}
-            </>
-          )}
         </div>
       </SectionCard>
 
       {/* Secret */}
       <SectionCard>
-        <CardHeader title="Secret de Autenticação" sub="Garante que só sua plataforma de pagamento pode ativar planos" />
+        <CardHeader title="Token do Webhook (SigiloPay)" sub="Cole aqui o token gerado pela SigiloPay ao criar o webhook. Ele é usado para validar que o disparo é legítimo." />
         <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", gap: 8 }}>
             <input value={secret} onChange={e => setSecret(e.target.value)} placeholder="Cole ou gere um secret seguro..." style={{ ...inputSt, fontFamily: "monospace", fontSize: 13 }} />

@@ -28,8 +28,7 @@ interface User {
 
 interface Plan {
   id: number; name: string; price: number; durationDays: number;
-  maxCampaigns: number; maxDebtors: number; checkoutUrl: string;
-  sigilopayProductId: string; active: boolean;
+  maxCampaigns: number; maxDebtors: number; checkoutUrl: string; active: boolean;
   _count?: { users: number };
 }
 
@@ -60,7 +59,7 @@ interface Activation {
 
 const EMPTY_PLAN: Omit<Plan, "id"> = {
   name: "", price: 0, durationDays: 30, maxCampaigns: 3, maxDebtors: 1000,
-  checkoutUrl: "", sigilopayProductId: "", active: true,
+  checkoutUrl: "", active: true,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -813,12 +812,6 @@ function PlanosTab({ plans, onReload }: { plans: Plan[]; onReload: () => void })
               <span>{plan.maxDebtors === 0 ? "Devedores ilimitados" : `${plan.maxDebtors.toLocaleString("pt-BR")} devedores`}</span>
               <span>{plan.durationDays === 0 ? "Acesso sem limite de prazo" : `${plan.durationDays} dias de acesso`}</span>
             </div>
-            <div style={{ padding: "7px 10px", borderRadius: 7, background: plan.sigilopayProductId ? "rgba(34,197,94,.06)" : "rgba(239,68,68,.06)", border: `1px solid ${plan.sigilopayProductId ? "rgba(34,197,94,.2)" : "rgba(239,68,68,.2)"}`, marginBottom: 14 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 3 }}>ID Produto SigiloPay</div>
-              <code style={{ fontSize: 11, color: plan.sigilopayProductId ? "#4ade80" : "#f87171", fontFamily: "monospace" }}>
-                {plan.sigilopayProductId || "⚠ Não configurado"}
-              </code>
-            </div>
             {plan._count !== undefined && (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 7, background: "rgba(99,102,241,.1)", border: "1px solid rgba(99,102,241,.2)", fontSize: 11, fontWeight: 600, color: "#818cf8", marginBottom: 16 }}>
                 {plan._count.users} assinante{plan._count.users !== 1 ? "s" : ""}
@@ -846,7 +839,6 @@ function PlanosTab({ plans, onReload }: { plans: Plan[]; onReload: () => void })
                 { label: "Máx. campanhas — 0 = sem limite", key: "maxCampaigns", type: "number" },
                 { label: "Máx. devedores — 0 = sem limite", key: "maxDebtors", type: "number" },
                 { label: "URL de checkout", key: "checkoutUrl", type: "text" },
-                { label: "ID do Produto SigiloPay", key: "sigilopayProductId", type: "text" },
               ] as { label: string; key: string; type: string }[]).map(f => (
                 <div key={f.key}>
                   <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.35)", marginBottom: 6, letterSpacing: ".06em", textTransform: "uppercase" }}>{f.label}</label>

@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
       maxCampaigns: body.maxCampaigns !== undefined ? Number(body.maxCampaigns) : 3,
       maxDebtors: body.maxDebtors !== undefined ? Number(body.maxDebtors) : 1000,
       checkoutUrl: body.checkoutUrl || "",
+      sigilopayProductId: body.sigilopayProductId || "",
       active: body.active ?? true,
     },
   });

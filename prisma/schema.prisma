@@ -14,11 +14,12 @@ model Plan {
   durationDays Int      @default(30)
   maxCampaigns Int      @default(3)
   maxDebtors   Int      @default(1000)
-  checkoutUrl  String   @default("")
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  users        User[]
-  planPayments PlanPayment[]
+  checkoutUrl        String   @default("")
+  sigilopayProductId String   @default("")
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  users              User[]
+  planPayments       PlanPayment[]
 }
 
 model User {

@@ -19,6 +19,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       maxCampaigns: Number(body.maxCampaigns),
       maxDebtors: Number(body.maxDebtors),
       checkoutUrl: body.checkoutUrl,
+      sigilopayProductId: body.sigilopayProductId ?? "",
       active: body.active,
     },
   });

@@ -21,7 +21,8 @@ export default function PlanosPage() {
   const checkAccess = useCallback(async () => {
     setChecking(true);
     setCheckMsg(null);
-    const res = await fetch("/api/auth/me");
+    // Chama refresh para renovar o token com planExpiresAt atualizado do banco
+    const res = await fetch("/api/auth/refresh", { method: "POST" });
     const d = await res.json();
     if (d.planActive) {
       setCheckMsg({ ok: true, text: "Plano ativo! Redirecionando para o painel..." });
